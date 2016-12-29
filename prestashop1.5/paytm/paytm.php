@@ -140,7 +140,10 @@
 					$host=$_SERVER["HTTP_HOST"];
 				}
 				$callback_html = "<input type='hidden' name='CALLBACK_URL' value='" . $protocol . $host . __PS_BASE_URI__  . 'modules/paytm/response.php' ."'/>";
-				$post_variables['CALLBACK_URL']=$callback_html;
+				
+				$callback_url = $protocol . $host . __PS_BASE_URI__  . 'modules/paytm/response.php';
+				$post_variables['CALLBACK_URL']=$callback_url;
+				//$post_variables['CALLBACK_URL']=$callback_html;
 			}
 			$checksum = getChecksumFromArray($post_variables, $secret_key);
 			$date= date('Y-m-d H:i:s');
