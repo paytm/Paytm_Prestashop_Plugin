@@ -13,7 +13,6 @@ class PaytmResponseModuleFrontController extends ModuleFrontController {
 		//var_dump($paramList);
 
 		$secret_key	   = Configuration::get('PayTM_SECRET_KEY');
-		$merchant_id	   = Configuration::get('PayTM_MERCHANT_ID');
 		$order_amount  = $_POST['TXNAMOUNT'];
 				
 		$bool = "FALSE";
@@ -41,44 +40,21 @@ class PaytmResponseModuleFrontController extends ModuleFrontController {
 		$cart = new Cart(intval($cartID));
 		$amount = $cart->getOrderTotal(true,Cart::BOTH);
 		$responseMsg = $_POST['RESPMSG'];
-		$mode = Configuration::get('PayTM_MODE');
 		if ($bool == "TRUE") {
-			// Create an array having all required parameters for status query.
-			$requestParamList = array("MID" => $merchant_id , "ORDERID" => $_POST['ORDERID']);
-			
-			// Call the PG's getTxnStatus() function for verifying the transaction status.
-			
-			if($mode=="TEST")
-			{
-				$check_status_url = 'https://pguat.paytm.com/oltp/HANDLER_INTERNAL/TXNSTATUS';
-			}
-			else
-			{
-				$check_status_url = 'https://secure.paytm.in/oltp/HANDLER_INTERNAL/TXNSTATUS';
-			}
-			$responseParamList = callAPI($check_status_url, $requestParamList);
-			if($responseParamList['STATUS']=='TXN_SUCCESS' && $responseParamList['TXNAMOUNT']==$order_amount)
-			{
-				if ($res_code == "01") {
-					$status_code = "Ok";
-					$message= "Transaction Successful";
-				   // $status = "15" ;
-					$status = Configuration::get('Paytm_ID_ORDER_SUCCESS');
-				} else if ($res_code == "141") {
-					$responseMsg = "Transaction Cancelled. ";
-					$message = "Transaction Cancelled";
-					$status = "6";
-				} else  {
-					$responseMsg = "Transaction Failed. ";
-					$message = "Transaction Failed";
-					$status = Configuration::get('Paytm_ID_ORDER_FAILED');
-				}
-			}
-			else{
-				$status_code = "Failed";
-				$responseMsg = "Security Error ..!";
-				$status = Configuration::get('Paytm_ID_ORDER_FAILED');
-			}
+			if ($res_code == "01") {
+                $status_code = "Ok";
+				$message= "Transaction Successful";
+               // $status = "15" ;
+			    $status = Configuration::get('Paytm_ID_ORDER_SUCCESS');
+            } else if ($res_code == "141") {
+				$responseMsg = "Transaction Cancelled. ";
+				$message = "Transaction Cancelled";
+                $status = "6";
+		    } else  {
+				$responseMsg = "Transaction Failed. ";
+				$message = "Transaction Failed";
+                $status = Configuration::get('Paytm_ID_ORDER_FAILED');
+            }
         } else {
 			$status_code = "Failed";
             $responseMsg = "Security Error ..!";
