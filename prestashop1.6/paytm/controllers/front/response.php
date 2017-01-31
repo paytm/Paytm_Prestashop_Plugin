@@ -52,9 +52,9 @@ class PaytmResponseModuleFrontController extends ModuleFrontController {
 			else
 			{
 				$check_status_url = 'https://secure.paytm.in/oltp/HANDLER_INTERNAL/TXNSTATUS';
-			}
-			$responseParamList = callAPI($check_status_url, $requestParamList);			
+			}						
 				if ($res_code == "01") {
+					$responseParamList = callAPI($check_status_url, $requestParamList);
 					if($responseParamList['STATUS']=='TXN_SUCCESS' && $responseParamList['TXNAMOUNT']==$order_amount)
 					{
 						$status_code = "Ok";
