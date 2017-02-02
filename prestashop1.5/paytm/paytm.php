@@ -47,6 +47,7 @@
 				Configuration::updateValue('Paytm_ID_ORDER_SUCCESS', $sid);
         Configuration::updateValue('Paytm_ID_ORDER_FAILED', $fid);
 				Configuration::updateValue('Paytm_ENABLE_CALLBACK','0');
+				Configuration::updateValue('Paytm_ENABLE_MODE','0');
 				
 				
        	$this->registerHook('payment');	
@@ -68,7 +69,7 @@
       Db::getInstance()->Execute('DELETE FROM `' . _DB_PREFIX_ . 'order_state` WHERE id_order_state = ' . Configuration::get('Paytm_ID_ORDER_FAILED'));
       Db::getInstance()->Execute('DELETE FROM `' . _DB_PREFIX_ . 'order_state_lang` WHERE id_order_state = ' . Configuration::get('Paytm_ID_ORDER_FAILED') . ' and id_lang = 1');
 				
-			if (!Configuration::deleteByName('Paytm_MERCHANT_ID') OR !Configuration::deleteByName('Paytm_GATEWAY_URL') OR !Configuration::deleteByName('Paytm_MERCHANT_INDUSTRY_TYPE') OR !Configuration::deleteByName('Paytm_MERCHANT_CHANNEL_ID') OR !Configuration::deleteByName('Paytm_MERCHANT_WEBSITE') OR !Configuration::deleteByName('Paytm_SECRET_KEY') OR !Configuration::deleteByName('Paytm_ID_ORDER_SUCCESS') OR !Configuration::deleteByName('Paytm_ID_ORDER_FAILED') OR !Configuration::deleteByName('Paytm_ENABLE_CALLBACK') OR !parent::uninstall()){
+			if (!Configuration::deleteByName('Paytm_MERCHANT_ID') OR !Configuration::deleteByName('Paytm_GATEWAY_URL') OR !Configuration::deleteByName('Paytm_MERCHANT_INDUSTRY_TYPE') OR !Configuration::deleteByName('Paytm_MERCHANT_CHANNEL_ID') OR !Configuration::deleteByName('Paytm_MERCHANT_WEBSITE') OR !Configuration::deleteByName('Paytm_SECRET_KEY') OR !Configuration::deleteByName('Paytm_ID_ORDER_SUCCESS') OR !Configuration::deleteByName('Paytm_ID_ORDER_FAILED') OR !Configuration::deleteByName('Paytm_ENABLE_CALLBACK') OR !Configuration::deleteByName('Paytm_ENABLE_MODE') OR !parent::uninstall()){
         return false;
 			}		
       return true;
@@ -104,11 +105,13 @@
 			
 			
 			$merchant_id = Configuration::get('Paytm_MERCHANT_ID');
+			$mode = (int)Configuration::get('Paytm_ENABLE_MODE');
       $secret_key = Configuration::get('Paytm_SECRET_KEY');
 			$industry_type = Configuration::get('Paytm_MERCHANT_INDUSTRY_TYPE');
       $channel_id = Configuration::get('Paytm_MERCHANT_CHANNEL_ID');
       $website = Configuration::get('Paytm_MERCHANT_WEBSITE');
 			$callback = (int)Configuration::get('Paytm_ENABLE_CALLBACK');
+			
 			$amount =  $cart->getOrderTotal(true, Cart::BOTH); 
 			
 			
@@ -181,6 +184,7 @@
 			$cid = Configuration::get('Paytm_MERCHANT_CHANNEL_ID');
 			$site = Configuration::get('Paytm_MERCHANT_WEBSITE');
 			$callback = Configuration::get('Paytm_ENABLE_CALLBACK');
+			$mode = Configuration::get('Paytm_ENABLE_MODE');
 			
 
 			if (!empty($id)) {
@@ -224,6 +228,11 @@
 			} else {
 					$is_callback = '';
 			}
+			if (!empty($mode) && $mode== 1) {
+					$is_mode = 'checked';
+			} else {
+					$is_mode = '';
+			}
 	
 			$this->_html .= '
 				<form action="' . $_SERVER['REQUEST_URI'] . '" method="post">
@@ -260,7 +269,11 @@
 								<tr>
 									<td width="130" style="height: 25px;">' . $this->l('Paytm Enable Callback') . '</td>
 									<td><input type="checkbox" name="paytm_callback" value="1" style="width: 170px;" ' . $is_callback . '/></td>
-								</tr>		
+								</tr>
+								<tr>
+									<td width="130" style="height: 25px;">' . $this->l('Paytm Enable Live') . '</td>
+									<td><input type="checkbox" name="paytm_mode" value="1" style="width: 170px;" ' . $is_mode . '/></td>
+								</tr>
 							<tr>
 								<td colspan="2" align="center"><br /><input class="button" name="submitPaytm" value="' . $this->l('Update settings') . '" type="submit" /></td>
 							</tr>
@@ -299,6 +312,10 @@
 							if(isset($_POST['paytm_callback']) && $_POST['paytm_callback'] == 1){
 								$is_callback=1;
 							}
+							$is_mode=0;
+							if(isset($_POST['paytm_mode']) && $_POST['paytm_mode'] == 1){
+								$is_mode=1;
+							}
               Configuration::updateValue('Paytm_MERCHANT_ID', $_POST['merchant_id']);
               Configuration::updateValue('Paytm_SECRET_KEY', $_POST['secret_key']);
               Configuration::updateValue('Paytm_GATEWAY_URL', $_POST['gateway_url']);
@@ -306,6 +323,7 @@
               Configuration::updateValue('Paytm_MERCHANT_CHANNEL_ID', $_POST['channel_id']);
               Configuration::updateValue('Paytm_MERCHANT_WEBSITE', $_POST['website']);
 							Configuration::updateValue('Paytm_ENABLE_CALLBACK',$is_callback );
+							Configuration::updateValue('Paytm_ENABLE_MODE',$is_mode );
               $this->displayConf();
           } else {
               $this->displayErrors();
@@ -352,6 +370,8 @@
 			
 			if(isset($_POST['RESPCODE']) && $_POST['RESPCODE'] == "01"){
 				$secret_key = Configuration::get('Paytm_SECRET_KEY');
+				$merchant_id = Configuration::get('Paytm_MERCHANT_ID');
+				$mode = (int)Configuration::get('Paytm_ENABLE_MODE');
 				$bool = "FALSE";
 				$paramList= $_POST;
 				$checksum_recv = $_POST['CHECKSUMHASH'];
@@ -359,11 +379,34 @@
 				$bool = verifychecksum_e($paramList, $secret_key, $checksum_recv);
 				$extra_vars['transaction_id'] = $_POST['TXNID'];
 				if($bool == "TRUE"){
-					$customer = new Customer((int)$cart->id_customer);										
-					parent::validateOrder((int) $order_id, Configuration::get('Paytm_ID_ORDER_SUCCESS'), $_POST['TXNAMOUNT'], $this->displayName,null, $extra_vars, null, true, $cart->secure_key, null);
-					$result=Db::getInstance()->getRow('SELECT * FROM `' . _DB_PREFIX_ . 'orders` WHERE id_cart=' .  $order_id);
-					$order = new Order($result['id_order']);
-					$order->addOrderPayment($_POST['TXNAMOUNT'], null, $_POST['TXNID']); 
+					// Create an array having all required parameters for status query.
+					$requestParamList = array("MID" => $merchant_id , "ORDERID" => $order_id);
+					
+					// Call the PG's getTxnStatus() function for verifying the transaction status.					
+					if($mode=="0")
+					{
+						$check_status_url = 'https://pguat.paytm.com/oltp/HANDLER_INTERNAL/TXNSTATUS';
+					}
+					else
+					{
+						$check_status_url = 'https://secure.paytm.in/oltp/HANDLER_INTERNAL/TXNSTATUS';
+					}
+					$responseParamList = callAPI($check_status_url, $requestParamList);
+					//echo "<pre>"; print_r($responseParamList); die;
+					if($responseParamList['STATUS']=='TXN_SUCCESS' && $responseParamList['TXNAMOUNT']==$_POST['TXNAMOUNT'])
+					{
+						$customer = new Customer((int)$cart->id_customer);										
+						parent::validateOrder((int) $order_id, Configuration::get('Paytm_ID_ORDER_SUCCESS'), $_POST['TXNAMOUNT'], $this->displayName,null, $extra_vars, null, true, $cart->secure_key, null);
+						$result=Db::getInstance()->getRow('SELECT * FROM `' . _DB_PREFIX_ . 'orders` WHERE id_cart=' .  $order_id);
+						$order = new Order($result['id_order']);
+						$order->addOrderPayment($_POST['TXNAMOUNT'], null, $_POST['TXNID']); 
+					}
+					else{
+						parent::validateOrder((int)$order_id,Configuration::get('Paytm_ID_ORDER_FAILED'), $_POST['TXNAMOUNT'],$this->displayName, NULL, $extra_vars,'', false, $cart->secure_key);					
+						$result=Db::getInstance()->getRow('SELECT * FROM `' . _DB_PREFIX_ . 'orders` WHERE id_cart=' .  $order_id);
+						$order = new Order($result['id_order']);
+						$order->addOrderPayment($_POST['TXNAMOUNT'], null, $_POST['TXNID']); 
+					}
 				}else{
 					parent::validateOrder((int)$order_id,Configuration::get('Paytm_ID_ORDER_FAILED'), $_POST['TXNAMOUNT'], $this->displayName, NULL, $extra_vars, '', false, $cart->secure_key);					
 					$result=Db::getInstance()->getRow('SELECT * FROM `' . _DB_PREFIX_ . 'orders` WHERE id_cart=' .  $order_id);
