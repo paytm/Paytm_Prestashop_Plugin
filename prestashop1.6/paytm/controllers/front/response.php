@@ -99,3 +99,4 @@ class PaytmResponseModuleFrontController extends ModuleFrontController {
 		$cart->delete();
 		$this->setTemplate('payment_response.tpl');
 }
+}
