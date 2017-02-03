@@ -68,7 +68,7 @@ class PaytmResponseModuleFrontController extends ModuleFrontController {
 						$status = Configuration::get('Paytm_ID_ORDER_FAILED');
 					}					
 				}
-				} else if ($res_code == "141") {
+				 else if ($res_code == "141") {
 					$responseMsg = "Transaction Cancelled. ";
 					$message = "Transaction Cancelled";
 					$status = "6";
@@ -98,5 +98,4 @@ class PaytmResponseModuleFrontController extends ModuleFrontController {
 		$cart_qties == 0;
 		$cart->delete();
 		$this->setTemplate('payment_response.tpl');
-	}
 }
