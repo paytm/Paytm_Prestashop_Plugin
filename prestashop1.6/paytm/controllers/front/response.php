@@ -67,7 +67,7 @@ class PaytmResponseModuleFrontController extends ModuleFrontController {
 						$status = Configuration::get('Paytm_ID_ORDER_SUCCESS');
 					}
 					else{
-						$responseMsg = "Transaction Failed. ";
+						$responseMsg = "It seems some issue in server to server communication. Kindly connect with administrator.";
 						$message = "Transaction Failed";
 						$status = Configuration::get('Paytm_ID_ORDER_FAILED');
 					}					
