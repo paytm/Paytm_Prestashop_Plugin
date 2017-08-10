@@ -59,7 +59,7 @@ class PaytmResponseModuleFrontController extends ModuleFrontController {
 			}						
 				if ($res_code == "01") {
 					$responseParamList = callNewAPI($check_status_url, $requestParamList);
-					if($responseParamList['STATUS']=='TXN_SUCCESS' && $responseParamList['TXNAMOUNT']==$order_amount)
+					if($responseParamList['STATUS']=='TXN_SUCCESS' && $responseParamList['TXNAMOUNT']==$amount)
 					{
 						$status_code = "Ok";
 						$message= "Transaction Successful";
