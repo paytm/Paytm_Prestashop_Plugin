@@ -28,8 +28,9 @@ class Paytm extends PaymentModule
 		if(parent::install()){
 			Configuration::updateValue('PayTM_MERCHANT_ID', '');
             Configuration::updateValue('PayTM_SECRET_KEY', '');
-            Configuration::updateValue('PayTM_MODE', '');
-            Configuration::updateValue('PayTM_GATEWAY_URL', '');
+            // Configuration::updateValue('PayTM_MODE', '');
+            Configuration::updateValue('transaction_status_url', '');
+            // Configuration::updateValue('PayTM_GATEWAY_URL', '');
             Configuration::updateValue('PayTM_MERCHANT_INDUSTRY_TYPE', '');
             Configuration::updateValue('PayTM_MERCHANT_CHANNEL_ID', '');
             Configuration::updateValue('PayTM_MERCHANT_WEBSITE', '');
@@ -55,7 +56,8 @@ class Paytm extends PaymentModule
 	public function uninstall(){
 		if (!Configuration::deleteByName('PayTM_MERCHANT_ID') OR
 			!Configuration::deleteByName('PayTM_SECRET_KEY') OR
-			!Configuration::deleteByName('PayTM_MODE') OR
+			// !Configuration::deleteByName('PayTM_MODE') OR
+			!Configuration::deleteByName('transaction_status_url') OR
 			!Configuration::deleteByName('PayTM_GATEWAY_URL') OR
 			!Configuration::deleteByName('PayTM_MERCHANT_INDUSTRY_TYPE') OR
 			!Configuration::deleteByName('PayTM_MERCHANT_CHANNEL_ID') OR
@@ -99,8 +101,12 @@ class Paytm extends PaymentModule
                 $this->_postErrors[] = $this->l('Please Enter your Merchant Channel ID.');
             if (empty($_POST['website']))
                 $this->_postErrors[] = $this->l('Please Enter your Website.');
-            if (empty($_POST['mode']))
+            /*if (empty($_POST['mode'])){
                 $this->_postErrors[] = $this->l('Please Select the Mode, you want to work on .');
+            }*/
+            if (empty($_POST['transaction_status_url'])){
+                $this->_postErrors[] = $this->l('Please Enter Status URL .');
+            }
 
             if (!sizeof($this->_postErrors)) {
                 Configuration::updateValue('PayTM_MERCHANT_ID', $_POST['merchant_id']);
@@ -109,7 +115,8 @@ class Paytm extends PaymentModule
                 Configuration::updateValue('PayTM_MERCHANT_INDUSTRY_TYPE', $_POST['industry_type']);
                 Configuration::updateValue('PayTM_MERCHANT_CHANNEL_ID', $_POST['channel_id']);
                 Configuration::updateValue('PayTM_MERCHANT_WEBSITE', $_POST['website']);
-                Configuration::updateValue('PayTM_MODE', $_POST['mode']);
+                // Configuration::updateValue('PayTM_MODE', $_POST['mode']);
+                Configuration::updateValue('transaction_status_url', $_POST['transaction_status_url']);
                 Configuration::updateValue('PayTM_ENABLE_CALLBACK', $_POST['callback']);
                 $this->displayConf();
             } else {
@@ -157,7 +164,8 @@ class Paytm extends PaymentModule
         $live = '';
         $on = '';
         $off = '';
-        $mode = Configuration::get('PayTM_MODE');
+        // $mode = Configuration::get('PayTM_MODE');
+        $transaction_status_url = Configuration::get('transaction_status_url');
         $id = Configuration::get('PayTM_MERCHANT_ID');
         $key = Configuration::get('PayTM_SECRET_KEY');
         $url = Configuration::get('PayTM_GATEWAY_URL');
@@ -170,6 +178,12 @@ class Paytm extends PaymentModule
             $merchant_id = $id;
         } else {
             $merchant_id = '';
+        }
+
+        if (!empty($transaction_status_url)) {
+            $transaction_status_url = $transaction_status_url;
+        } else {
+            $transaction_status_url = '';
         }
 
         if (!empty($key)) {
@@ -202,7 +216,7 @@ class Paytm extends PaymentModule
             $website = '';
         }
 
-        if (!empty($mode)) {
+        /*if (!empty($mode)) {
             if ($mode == 'TEST') {
                 $test = "selected='selected'";
                 $live = '';
@@ -214,7 +228,7 @@ class Paytm extends PaymentModule
         } else {
             $live = '';
             $test = '';
-        }
+        }*/
 
         if (!empty($z_callback)) {
             if ($z_callback == 'ON') {
@@ -245,7 +259,7 @@ class Paytm extends PaymentModule
 						<td><input type="text" name="secret_key" value="' . $secret_key . '" style="width: 170px;" /></td>
 					</tr>
                                         <tr>
-                                            <td width="130" style="height: 25px;">' . $this->l('PayTM Gateway Url') . '</td>
+                                            <td width="130" style="height: 25px;">' . $this->l('PayTM Transaction Url') . '</td>
                                             <td><input type="text" name="gateway_url" value="' . $gateway_url . '" style="width: 170px;" /></td>
                                         </tr>
                                         <tr>
@@ -261,17 +275,9 @@ class Paytm extends PaymentModule
                                             <td><input type="text" name="website" value="' . $website . '" style="width: 170px;" /></td>
                                         </tr>
 					<tr>
-						<td width="130" style="height: 25px;">' . $this->l('PayTM Mode') . '</td>
-						<td>
-							<select name="mode" style="width: 110px;">
-								<option value="">-Select-</option>
-								<option value="TEST" ' . $test . '>Sandbox(Test)</option>
-								<option value="LIVE" ' . $live . '>Live</option>
-							</select>
-						</td>
+					    <td width="130" style="height: 25px;">' . $this->l('PayTM Transaction Status URL') . '</td>
+					    <td><input type="text" name="transaction_status_url" value="' . $transaction_status_url . '" style="width: 170px;" /></td>
 					</tr>
-					<tr><td colspan="2"><p class="hint clear" style="display: block; width: 350px;">' . $this->l('Select the Mode you want to work on.') . '</p></td></tr>
-					<tr> </tr>
 				    <tr>
 						<td width="200" style="height: 25px; padding-top:20px;">' . $this->l('Please select PayTM Callback url mode') . '</td>
 						<td>
@@ -307,7 +313,8 @@ class Paytm extends PaymentModule
 		
 		$account_id= Configuration::get('ACCOUNT_ID');
 		$secret_key = Configuration::get('SECRET_KEY');		
-		$mode = Configuration::get('MODE');
+		// $mode = Configuration::get('MODE');
+		$transaction_status_url = Configuration::get('transaction_status_url');
 		$id_currency = intval(Configuration::get('PS_CURRENCY_DEFAULT'));		
 		$currency = new Currency(intval($id_currency));		
 		
@@ -350,7 +357,7 @@ class Paytm extends PaymentModule
 		
 		$ref_no = intval($cart->id);
 		//$return_url = 'http://'.htmlspecialchars($_SERVER['HTTP_HOST'], ENT_COMPAT, 'UTF-8').__PS_BASE_URI__.'modules/ebs/response.php?DR={DR}&cart_id='.intval($cart->id);
-		$hash = $secret_key ."|". $account_id. "|". $amount . "|".$ref_no."|".html_entity_decode($return_url)."|". $mode;
+		$hash = $secret_key ."|". $account_id. "|". $amount . "|".$ref_no."|".html_entity_decode($return_url);
 		$securehash = md5($hash);
 		$reference_no = intval($cart->id);
 		$description = "Order ID is ".$reference_no;
@@ -364,12 +371,12 @@ class Paytm extends PaymentModule
         $secret_key = Configuration::get('PayTM_SECRET_KEY');
         $cust_id = intval($cart->id_customer);
 		$callback = Configuration::get('PayTM_ENABLE_CALLBACK');
-        $mode = Configuration::get('PayTM_MODE');
+        /*$mode = Configuration::get('PayTM_MODE');
         $mod = $mode;
         if ($mod == "TEST")
            $mode = 0;
         else
-           $mode = 1;
+           $mode = 1;*/
 		
 		
 		$mobile_no='';
