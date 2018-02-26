@@ -20,7 +20,8 @@ class PaytmResponseModuleFrontController extends ModuleFrontController {
 		$cart = $this->context->cart;
 		$amount = $cart->getOrderTotal(true,Cart::BOTH);
 		$responseMsg1 = $_POST['RESPMSG'];
-		$mode = Configuration::get('PayTM_MODE');
+		// $mode = Configuration::get('PayTM_MODE');
+		$transaction_status_url = Configuration::get('transaction_status_url');
 		if ($bool == "TRUE") {
 			// Create an array having all required parameters for status query.
 			$requestParamList = array("MID" => $merchant_id , "ORDERID" => $_POST['ORDERID']);
@@ -28,15 +29,23 @@ class PaytmResponseModuleFrontController extends ModuleFrontController {
 			$StatusCheckSum = getChecksumFromArray($requestParamList,$secret_key);
 				
 			$requestParamList['CHECKSUMHASH'] = $StatusCheckSum;
-			
-			if($mode=="TEST")
-			{
-				$check_status_url = 'https://pguat.paytm.com/oltp/HANDLER_INTERNAL/getTxnStatus';
-			}
-			else
-			{
-				$check_status_url = 'https://secure.paytm.in/oltp/HANDLER_INTERNAL/getTxnStatus';
-			}						
+			/*	19751/17Jan2018	*/
+				/*if($mode=="TEST")
+				{
+					$check_status_url = 'https://pguat.paytm.com/oltp/HANDLER_INTERNAL/getTxnStatus';
+				}
+				else
+				{
+					$check_status_url = 'https://secure.paytm.in/oltp/HANDLER_INTERNAL/getTxnStatus';
+				}*/
+
+				/*if($mode=="TEST") {
+					$check_status_url = 'https://securegw-stage.paytm.in/merchant-status/getTxnStatus';
+				} else {
+					$check_status_url = 'https://securegw.paytm.in/merchant-status/getTxnStatus';
+				}						*/
+				$check_status_url = $transaction_status_url;
+			/*	19751/17Jan2018 end	*/
 				if ($res_code == "01") {
 					$responseParamList = callNewAPI($check_status_url, $requestParamList);
 					if($responseParamList['STATUS']=='TXN_SUCCESS' && $responseParamList['TXNAMOUNT']==$amount)
