@@ -1,34 +1,17 @@
 <?php
 
-function encrypt_e($input, $ky)
-{
-    $key   = $ky;
-    $size  = mcrypt_get_block_size(MCRYPT_RIJNDAEL_128, 'cbc');
-    $input = pkcs5_pad_e($input, $size);
-    $td    = mcrypt_module_open(MCRYPT_RIJNDAEL_128, '', 'cbc', '');
-    $iv    = "@@@@&&&&####$$$$";
-    mcrypt_generic_init($td, $key, $iv);
-    $data = mcrypt_generic($td, $input);
-    mcrypt_generic_deinit($td);
-    mcrypt_module_close($td);
-    $data = base64_encode($data);
+function encrypt_e($input, $ky) {
+    $key   = html_entity_decode($ky);
+    $iv = "@@@@&&&&####$$$$";
+    $data = openssl_encrypt ( $input , "AES-128-CBC" , $key, 0, $iv );
     return $data;
 }
 
-function decrypt_e($crypt, $ky)
-{
-    
-    $crypt = base64_decode($crypt);
-    $key   = $ky;
-    $td    = mcrypt_module_open(MCRYPT_RIJNDAEL_128, '', 'cbc', '');
-    $iv    = "@@@@&&&&####$$$$";
-    mcrypt_generic_init($td, $key, $iv);
-    $decrypted_data = mdecrypt_generic($td, $crypt);
-    mcrypt_generic_deinit($td);
-    mcrypt_module_close($td);
-    $decrypted_data = pkcs5_unpad_e($decrypted_data);
-    $decrypted_data = rtrim($decrypted_data);
-    return $decrypted_data;
+function decrypt_e($crypt, $ky) {
+    $key   = html_entity_decode($ky);
+    $iv = "@@@@&&&&####$$$$";
+    $data = openssl_decrypt ( $crypt , "AES-128-CBC" , $key, 0, $iv );
+    return $data;
 }
 
 function pkcs5_pad_e($text, $blocksize)
