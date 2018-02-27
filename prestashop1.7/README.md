@@ -7,3 +7,12 @@
  5. Now you can see the Paytm plugin in payment option.
  6. If you have a linux server make sure the Folder permission are set to 755 and file permission to 644.
  7. After you have installed plugin,logout from admin.
+
+# Paytm PG URL Details
+	staging	
+		Transaction URL 			=> https://securegw-stage.paytm.in/theia/processTransaction
+		Transaction Status Url 		=> https://securegw-stage.paytm.in/merchant-status/getTxnStatus
+
+	Production
+		Transaction URL 			=> https://securegw.paytm.in/theia/processTransaction
+		Transaction Status Url 		=> https://securegw.paytm.in/merchant-status/getTxnStatus
