@@ -9,9 +9,9 @@
 
 # Paytm PG URL Details
 	staging	
-		Transaction URL 			      => https://securegw-stage.paytm.in/theia/processTransaction
-		Transaction Status Url 		=> https://securegw-stage.paytm.in/merchant-status/getTxnStatus
+		Transaction URL             => https://securegw-stage.paytm.in/theia/processTransaction
+		Transaction Status Url      => https://securegw-stage.paytm.in/merchant-status/getTxnStatus
 
 	Production
-		Transaction URL 			      => https://securegw.paytm.in/theia/processTransaction
-		Transaction Status Url 		=> https://securegw.paytm.in/merchant-status/getTxnStatus
+		Transaction URL             => https://securegw.paytm.in/theia/processTransaction
+		Transaction Status Url      => https://securegw.paytm.in/merchant-status/getTxnStatus
