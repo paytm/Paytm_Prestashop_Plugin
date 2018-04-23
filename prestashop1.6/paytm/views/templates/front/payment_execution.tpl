@@ -9,20 +9,10 @@
 {else}
 
 <h3>{l s='You have chosen to pay with Paytm' mod='Paytm'}</h3>
-<form name="checkout_confirmation" action="{$paytmurl}" method="post" />
-	<input type="hidden" name="MID" value="{$merchant_id}" />
-	<input type="hidden" name="ORDER_ID" value="{$order_id}" />
-	
-	<input name="WEBSITE" type="hidden" value="{$website}" />
-	<input name="INDUSTRY_TYPE_ID" type="hidden" value="{$industry_type}" />
-	<input name="CHANNEL_ID" type="hidden" value="{$channel_id}" />
-	<input name="TXN_AMOUNT" type="hidden" value="{$amount}" />
-	<input name="EMAIL" type="hidden" value="{$email}" />
-	<input name="CUST_ID" type="hidden" value="{$cust_id}" />
-	<input name="MOBILE_NO" type="hidden" value="{$mobile_no}" />
-	<input name="txnDate" type="hidden" value="{$date}" />
-	<input name="CHECKSUMHASH" type="hidden" value="{$checksum}" />
-	{$callback_html}
+<form name="checkout_confirmation" action="{$action}" method="post" />
+	{foreach from=$paytm_post key=k item=v}
+		<input type="hidden" name="{$k}" value="{$v}" />
+	{/foreach}
     <p>
 		{l s='Here is a short summary of your order:' mod='paytm'}
 	</p>

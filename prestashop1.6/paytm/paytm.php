@@ -1,79 +1,83 @@
 <?php
-if (!defined('_CAN_LOAD_FILES_'))
+if (!defined("_PS_VERSION_"))
 	exit;
-require_once(dirname(__FILE__).'/lib/encdec_paytm.php');
-	
-class Paytm extends PaymentModule
-{
-	private	$_html = '';
-	private $_postErrors = array();
-	private $_responseReasonText = null;
 
-	public function __construct(){
-		$this->name = 'paytm';
-		$this->tab = 'payments_gateways';
-		$this->version = '2.5';
-		$this->author = 'Paytm Development Team';
-        parent::__construct();
-		$this->page = basename(__FILE__, '.php');
-        $this->displayName = $this->l('Paytm');
-        $this->description = $this->l('Module for accepting payments by Paytm');
+require_once(dirname(__FILE__) . "/lib/encdec_paytm.php");
+
+class Paytm extends PaymentModule {
+
+	private $_html = "";
+	private $_postErrors = array();
+	private static $debug_log = false;
+
+	public function __construct() {
+		$this->name = "paytm";
+		$this->tab = "payments_gateways";
+		$this->version = "3.0";
+		$this->author = "Paytm Development Team";
+
+		parent::__construct();
+		
+		$this->page = basename(__FILE__, ".php");
+		$this->displayName = $this->l("Paytm");
+		$this->description = $this->l("Module for accepting payments by Paytm");
 	}
-	
-	public function getPaytmUrl(){
-		return Configuration::get('Paytm_GATEWAY_URL');
+
+	private function getDefaultCallbackUrl(){
+		return $this->context->link->getModuleLink('paytm','response');
 	}
-	
-	public function install(){
-		if(parent::install()){
-			Configuration::updateValue('PayTM_MERCHANT_ID', '');
-            Configuration::updateValue('PayTM_SECRET_KEY', '');
-            // Configuration::updateValue('PayTM_MODE', '');
-            Configuration::updateValue('transaction_status_url', '');
-            // Configuration::updateValue('PayTM_GATEWAY_URL', '');
-            Configuration::updateValue('PayTM_MERCHANT_INDUSTRY_TYPE', '');
-            Configuration::updateValue('PayTM_MERCHANT_CHANNEL_ID', '');
-            Configuration::updateValue('PayTM_MERCHANT_WEBSITE', '');
-            Configuration::updateValue('PayTM_ENABLE_CALLBACK', '');
-           			
-			
-			$this->registerHook('payment');
-			$this->registerHook('PaymentReturn');
-			$this->registerHook('ShoppingCartExtra');
-			if(!Configuration::get('Paytm_ORDER_STATE')){
-				$this->setPaytmOrderState('Paytm_ID_ORDER_SUCCESS','Payment Received','#b5eaaa');
-				$this->setPaytmOrderState('Paytm_ID_ORDER_FAILED','Payment Failed','#E77471');
-				$this->setPaytmOrderState('Paytm_ID_ORDER_PENDING','Payment Pending','#F4E6C9');
-				Configuration::updateValue('Paytm_ORDER_STATE', '1');
-			}		
+
+	public function install() {
+		if (parent::install()) {
+			Configuration::updateValue("Paytm_MERCHANT_ID", "");
+			Configuration::updateValue("Paytm_MERCHANT_KEY", "");
+			Configuration::updateValue("Paytm_TRANSACTION_STATUS_URL", "");
+			Configuration::updateValue("Paytm_GATEWAY_URL", "");
+			Configuration::updateValue("Paytm_MERCHANT_INDUSTRY_TYPE", "");
+			Configuration::updateValue("Paytm_MERCHANT_CHANNEL_ID", "WEB");
+			Configuration::updateValue("Paytm_MERCHANT_WEBSITE", "");
+			Configuration::updateValue("Paytm_CALLBACK_URL_STATUS", 0);
+			Configuration::updateValue("Paytm_CALLBACK_URL", $this->getDefaultCallbackUrl());
+			Configuration::updateValue("Paytm_ENABLE_LOG", 0);
+
+			$this->registerHook("payment");
+			$this->registerHook("paymentReturn");
+			if (!Configuration::get("Paytm_ORDER_STATE")) {
+				$this->setPaytmOrderState("Paytm_ID_ORDER_SUCCESS", "Payment Received", "#b5eaaa");
+				$this->setPaytmOrderState("Paytm_ID_ORDER_FAILED", "Payment Failed", "#E77471");
+				$this->setPaytmOrderState("Paytm_ID_ORDER_PENDING", "Payment Pending", "#F4E6C9");
+				Configuration::updateValue("Paytm_ORDER_STATE", "1");
+			}
 			return true;
-		}
-		else {
+		} else {
 			return false;
 		}
 	}
-	
-	public function uninstall(){
-		if (!Configuration::deleteByName('PayTM_MERCHANT_ID') OR
-			!Configuration::deleteByName('PayTM_SECRET_KEY') OR
-			// !Configuration::deleteByName('PayTM_MODE') OR
-			!Configuration::deleteByName('transaction_status_url') OR
-			!Configuration::deleteByName('PayTM_GATEWAY_URL') OR
-			!Configuration::deleteByName('PayTM_MERCHANT_INDUSTRY_TYPE') OR
-			!Configuration::deleteByName('PayTM_MERCHANT_CHANNEL_ID') OR
-			!Configuration::deleteByName('PayTM_MERCHANT_WEBSITE') OR 
-			!Configuration::deleteByName('PayTM_ENABLE_CALLBACK') OR			
-			!parent::uninstall()){
-				return false;
-		}	
+
+	public function uninstall() {
+
+		if (!Configuration::deleteByName("Paytm_MERCHANT_ID") OR 
+			!Configuration::deleteByName("Paytm_MERCHANT_KEY") OR 
+			!Configuration::deleteByName("Paytm_TRANSACTION_STATUS_URL") OR 
+			!Configuration::deleteByName("Paytm_GATEWAY_URL") OR 
+			!Configuration::deleteByName("Paytm_MERCHANT_INDUSTRY_TYPE") OR 
+			!Configuration::deleteByName("Paytm_MERCHANT_CHANNEL_ID") OR 
+			!Configuration::deleteByName("Paytm_MERCHANT_WEBSITE") OR 
+			!Configuration::deleteByName("Paytm_CALLBACK_URL_STATUS") OR 
+			!Configuration::deleteByName("Paytm_CALLBACK_URL") OR 
+			!Configuration::deleteByName("Paytm_ENABLE_LOG") OR 
+			!parent::uninstall()) {
+			return false;
+		}
+
 		return true;
 	}
-	
-	public function setPaytmOrderState($var_name,$status,$color){
+
+	public function setPaytmOrderState($var_name, $status, $color) {
 		$orderState = new OrderState();
 		$orderState->name = array();
-		foreach(Language::getLanguages() AS $language){
-			$orderState->name[$language['id_lang']] = $status;
+		foreach (Language::getLanguages() AS $language) {
+			$orderState->name[$language["id_lang"]] = $status;
 		}
 		$orderState->send_email = false;
 		$orderState->color = $color;
@@ -82,363 +86,375 @@ class Paytm extends PaymentModule
 		$orderState->logable = true;
 		$orderState->invoice = true;
 		if ($orderState->add())
-			Configuration::updateValue($var_name, (int)$orderState->id);
+			Configuration::updateValue($var_name, (int) $orderState->id);
 		return true;
 	}
-	
-	public function getContent() {
-        $this->_html = '<h2>' . $this->displayName . '</h2>';
-        if (isset($_POST['submitPayTM'])) {
-            if (empty($_POST['merchant_id']))
-                $this->_postErrors[] = $this->l('Please Enter your Merchant ID.');
-            if (empty($_POST['secret_key']))
-                $this->_postErrors[] = $this->l('Please Enter your Secret Key.');
-            if (empty($_POST['gateway_url']))
-                $this->_postErrors[] = $this->l('Please Enter PayTM Gateway Url.');
-            if (empty($_POST['industry_type']))
-                $this->_postErrors[] = $this->l('Please Enter your Industry Type.');
-            if (empty($_POST['channel_id']))
-                $this->_postErrors[] = $this->l('Please Enter your Merchant Channel ID.');
-            if (empty($_POST['website']))
-                $this->_postErrors[] = $this->l('Please Enter your Website.');
-            /*if (empty($_POST['mode'])){
-                $this->_postErrors[] = $this->l('Please Select the Mode, you want to work on .');
-            }*/
-            if (empty($_POST['transaction_status_url'])){
-                $this->_postErrors[] = $this->l('Please Enter Status URL .');
-            }
 
-            if (!sizeof($this->_postErrors)) {
-                Configuration::updateValue('PayTM_MERCHANT_ID', $_POST['merchant_id']);
-                Configuration::updateValue('PayTM_SECRET_KEY', $_POST['secret_key']);
-                Configuration::updateValue('PayTM_GATEWAY_URL', $_POST['gateway_url']);
-                Configuration::updateValue('PayTM_MERCHANT_INDUSTRY_TYPE', $_POST['industry_type']);
-                Configuration::updateValue('PayTM_MERCHANT_CHANNEL_ID', $_POST['channel_id']);
-                Configuration::updateValue('PayTM_MERCHANT_WEBSITE', $_POST['website']);
-                // Configuration::updateValue('PayTM_MODE', $_POST['mode']);
-                Configuration::updateValue('transaction_status_url', $_POST['transaction_status_url']);
-                Configuration::updateValue('PayTM_ENABLE_CALLBACK', $_POST['callback']);
-                $this->displayConf();
-            } else {
-                $this->displayErrors();
-            }
-        }
-        $this->_displayPaytm();
-        $this->_displayFormSettings();
-        return $this->_html;
-    }
-	
-	public function displayConf(){
+	public function getContent() {
+		$this->_html = "<h2>" . $this->displayName . "</h2>";
+		if (isset($_POST["submitPaytm"])) {
+
+			// trim all values
+			foreach($_POST as &$v){
+				$v = trim($v);
+			}
+
+			if (!isset($_POST["merchant_id"]) || $_POST["merchant_id"] == ""){
+				$this->_postErrors[] = $this->l("Please Enter your Merchant ID.");
+			}
+
+			if (!isset($_POST["merchant_key"]) || $_POST["merchant_key"] == ""){
+				$this->_postErrors[] = $this->l("Please Enter your Merchant Key.");
+			}
+
+			if (!isset($_POST["industry_type"]) || $_POST["industry_type"] == ""){
+				$this->_postErrors[] = $this->l("Please Enter your Industry Type.");
+			}
+
+			if (!isset($_POST["channel_id"]) || $_POST["channel_id"] == ""){
+				$this->_postErrors[] = $this->l("Please Enter your Channel ID.");
+			}
+
+			if (!isset($_POST["website"]) || $_POST["website"] == ""){
+				$this->_postErrors[] = $this->l("Please Enter your Website.");
+			}
+
+			if (!isset($_POST["gateway_url"]) || $_POST["gateway_url"] == ""){
+				$this->_postErrors[] = $this->l("Please Enter Gateway Url.");
+			}
+
+			if (!isset($_POST["status_url"]) || $_POST["status_url"] == ""){
+				$this->_postErrors[] = $this->l("Please Enter Transaction Status URL .");
+			}
+
+			if (!isset($_POST["callback_url"]) || $_POST["callback_url"] == ""){
+				$this->_postErrors[] = $this->l("Please Enter Callback URL.");
+			}
+
+			// if log is enabled then try to write log file else show permission error
+			if (isset($_POST["log_enable"])  && !empty($_POST["log_enable"])){
+				$writeable = Paytm::addLog("Log Enabled", __FILE__, __LINE__);
+				if($writeable != true){
+					$this->_postErrors[] = $this->l($res);
+				}
+			}
+
+			if (!sizeof($this->_postErrors)) {
+				Configuration::updateValue("Paytm_MERCHANT_ID", $_POST["merchant_id"]);
+				Configuration::updateValue("Paytm_MERCHANT_KEY", $_POST["merchant_key"]);
+				Configuration::updateValue("Paytm_GATEWAY_URL", $_POST["gateway_url"]);
+				Configuration::updateValue("Paytm_MERCHANT_INDUSTRY_TYPE", $_POST["industry_type"]);
+				Configuration::updateValue("Paytm_MERCHANT_CHANNEL_ID", $_POST["channel_id"]);
+				Configuration::updateValue("Paytm_MERCHANT_WEBSITE", $_POST["website"]);
+				Configuration::updateValue("Paytm_TRANSACTION_STATUS_URL", $_POST["status_url"]);
+				Configuration::updateValue("Paytm_CALLBACK_URL_STATUS", $_POST["callback_url_status"]);
+				Configuration::updateValue("Paytm_CALLBACK_URL", $_POST["callback_url"]);
+				Configuration::updateValue("Paytm_ENABLE_LOG", $_POST["log_enable"]);
+				$this->displayConf();
+			} else {
+				$this->displayErrors();
+			}
+		}
+
+		$this->_displayPaytm();
+		$this->_displayFormSettings();
+		return $this->_html;
+	}
+
+	public function displayConf() {
 		$this->_html .= '
 		<div class="conf confirm">
-			<img src="../img/admin/ok.gif" alt="'.$this->l('Confirmation').'" />
-			'.$this->l('Settings updated').'
+			<img src="../img/admin/ok.gif" alt="' . $this->l("Confirmation") . '" />
+			' . $this->l("Settings updated") . '
 		</div>';
 	}
-	
-	public function displayErrors(){
+
+	public function displayErrors() {
 		$nbErrors = sizeof($this->_postErrors);
 		$this->_html .= '
 		<div class="alert error">
-			<h3>'.($nbErrors > 1 ? $this->l('There are') : $this->l('There is')).' '.$nbErrors.' '.($nbErrors > 1 ? $this->l('errors') : $this->l('error')).'</h3>
+			<h3>' . ($nbErrors > 1 ? $this->l("There are") : $this->l("There is")) . ' ' . $nbErrors . ' ' . ($nbErrors > 1 ? $this->l("errors") : $this->l("error")) . '</h3>
 			<ol>';
 		foreach ($this->_postErrors AS $error)
-			$this->_html .= '<li>'.$error.'</li>';
+			$this->_html .= "<li>" . $error . "</li>";
 		$this->_html .= '
 			</ol>
 		</div>';
 	}
-	
-	public function _displayPaytm(){
+
+	public function _displayPaytm() {
 		$this->_html .= '
 		<img src="../modules/paytm/logo.png" style="float:left; padding: 0px; margin-right:15px;" />
-		<b>'.$this->l('This module allows you to accept payments by Paytm.').'</b><br /><br />
-		'.$this->l('If the client chooses this payment mode, your Paytm account will be automatically credited.').'<br />
-		'.$this->l('You need to configure your Paytm account first before using this module.').'
+		<b>' . $this->l("This module allows you to accept payments by Paytm.") . '</b><br /><br />
+		' . $this->l("If the client chooses this payment mode, your Paytm account will be automatically credited.") . '<br />
+		' . $this->l("You need to configure your Paytm account first before using this module. Please enter following details provided to you by Paytm.") . '
 		<br /><br /><br />';
 	}
-	
-	 public function _displayFormSettings() {
 
-        $test = '';
-        $live = '';
-        $on = '';
-        $off = '';
-        // $mode = Configuration::get('PayTM_MODE');
-        $transaction_status_url = Configuration::get('transaction_status_url');
-        $id = Configuration::get('PayTM_MERCHANT_ID');
-        $key = Configuration::get('PayTM_SECRET_KEY');
-        $url = Configuration::get('PayTM_GATEWAY_URL');
-        $itype = Configuration::get('PayTM_MERCHANT_INDUSTRY_TYPE');
-        $cid = Configuration::get('PayTM_MERCHANT_CHANNEL_ID');
-        $site = Configuration::get('PayTM_MERCHANT_WEBSITE');
-        $z_callback = Configuration::get('PayTM_ENABLE_CALLBACK');
+	public function _displayFormSettings() {
 
-        if (!empty($id)) {
-            $merchant_id = $id;
-        } else {
-            $merchant_id = '';
-        }
+		$merchant_id = isset($_POST["merchant_id"])? 
+							$_POST["merchant_id"] : Configuration::get("Paytm_MERCHANT_ID");
 
-        if (!empty($transaction_status_url)) {
-            $transaction_status_url = $transaction_status_url;
-        } else {
-            $transaction_status_url = '';
-        }
+		$merchant_key = isset($_POST["merchant_key"])? 
+							$_POST["merchant_key"] : Configuration::get("Paytm_MERCHANT_KEY");
 
-        if (!empty($key)) {
-            $secret_key = $key;
-        } else {
-            $secret_key = '';
-        }
-        
-        if (!empty($url)) {
-            $gateway_url = $url;
-        } else {
-            $gateway_url = '';
-        }
-        
-        if (!empty($itype)) {
-            $industry_type = $itype;
-        } else {
-            $industry_type = '';
-        }
-        
-        if (!empty($cid)) {
-            $channel_id = $cid;
-        } else {
-            $channel_id = '';
-        }
-        
-        if (!empty($site)) {
-            $website = $site;
-        } else {
-            $website = '';
-        }
+		$industry_type = isset($_POST["industry_type"])? 
+							$_POST["industry_type"] : Configuration::get("Paytm_MERCHANT_INDUSTRY_TYPE");
 
-        /*if (!empty($mode)) {
-            if ($mode == 'TEST') {
-                $test = "selected='selected'";
-                $live = '';
-            }
-            if ($mode == 'LIVE') {
-                $live = "selected='selected'";
-                $test = '';
-            }
-        } else {
-            $live = '';
-            $test = '';
-        }*/
+		$channel_id = isset($_POST["channel_id"])? 
+							$_POST["channel_id"] : Configuration::get("Paytm_MERCHANT_CHANNEL_ID");
 
-        if (!empty($z_callback)) {
-            if ($z_callback == 'ON') {
-                $on = "checked='checked'";
-                $off = '';
-            }
-            if ($z_callback == 'OFF') {
-                $off = "checked='checked'";
-                $on = '';
-            }
-        } else {
-            $on = '';
-            $off = "checked='checked'";
-        }
+		$website = isset($_POST["website"])? 
+							$_POST["website"] : Configuration::get("Paytm_MERCHANT_WEBSITE");
 
-        $this->_html .= '
-		<form action="' . $_SERVER['REQUEST_URI'] . '" method="post">
-			<fieldset>
-			<legend><img src="../img/admin/contact.gif" />' . $this->l('Configuration Settings') . '</legend>
-				<table border="0" width="500" cellpadding="0" cellspacing="0" id="form">
-					<tr><td colspan="2">' . $this->l('Please specify the Merchant ID and Secret Key provided by PayTM.') . '<br /><br /></td></tr>
-					<tr>
-                                            <td width="130" style="height: 25px;">' . $this->l('PayTM Merchant ID') . '</td>
-                                            <td><input type="text" name="merchant_id" value="' . $merchant_id . '" style="width: 170px;" /></td>
-                                        </tr>
-					<tr>
-						<td width="130" style="height: 25px;">' . $this->l('PayTM Merchant Key') . '</td>
-						<td><input type="text" name="secret_key" value="' . $secret_key . '" style="width: 170px;" /></td>
-					</tr>
-                                        <tr>
-                                            <td width="130" style="height: 25px;">' . $this->l('PayTM Transaction Url') . '</td>
-                                            <td><input type="text" name="gateway_url" value="' . $gateway_url . '" style="width: 170px;" /></td>
-                                        </tr>
-                                        <tr>
-                                            <td width="130" style="height: 25px;">' . $this->l('PayTM Merchant Industry Type') . '</td>
-                                            <td><input type="text" name="industry_type" value="' . $industry_type . '" style="width: 170px;" /></td>
-                                        </tr>
-                                        <tr>
-                                            <td width="130" style="height: 25px;">' . $this->l('PayTM Merchant Channel ID') . '</td>
-                                            <td><input type="text" name="channel_id" value="' . $channel_id . '" style="width: 170px;" /></td>
-                                        </tr>
-                                        <tr>
-                                            <td width="130" style="height: 25px;">' . $this->l('PayTM Merchant Website') . '</td>
-                                            <td><input type="text" name="website" value="' . $website . '" style="width: 170px;" /></td>
-                                        </tr>
-					<tr>
-					    <td width="130" style="height: 25px;">' . $this->l('PayTM Transaction Status URL') . '</td>
-					    <td><input type="text" name="transaction_status_url" value="' . $transaction_status_url . '" style="width: 170px;" /></td>
-					</tr>
-				    <tr>
-						<td width="200" style="height: 25px; padding-top:20px;">' . $this->l('Please select PayTM Callback url mode') . '</td>
-						<td>
-							<input type="radio"  style="width: 110px;" name="callback" value="ON" ' . $on . ' /> On </td><br /><br />
-						<td> <input type="radio" name="callback" value="OFF" ' . $off . ' /> Off </td></tr><br /><br />
-					<tr><td colspan="2" align="center"><br /><input class="button" name="submitPayTM" value="' . $this->l('Update settings') . '" type="submit" /></td></tr>
-				</table>
-			</fieldset>
-		</form>
+		$gateway_url = isset($_POST["gateway_url"])? 
+							$_POST["gateway_url"] : Configuration::get("Paytm_GATEWAY_URL");
+
+		$status_url = isset($_POST["status_url"])? 
+							$_POST["status_url"] : Configuration::get("Paytm_TRANSACTION_STATUS_URL");
+
+		$callback_url = isset($_POST["callback_url"])? 
+							$_POST["callback_url"] : Configuration::get("Paytm_CALLBACK_URL");
+
+		$this->bootstrap = true;
+		$this->_html .= '
+			<form id="module_form" class="defaultForm form-horizontal" method="POST" novalidate="">
+				<div class="panel">
+					<div class="panel-heading">'.$this->l("Paytm Payment Configuration").'</div>
+					<div class="form-wrapper">
+						<div class="form-group">
+							<label class="control-label col-lg-3 required"> '.$this->l("Merchant ID").'</label>
+							<div class="col-lg-9">
+								<input type="text" name="merchant_id" value="' . $merchant_id . '"  class="" required="required"/>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="control-label col-lg-3 required"> '.$this->l("Merchant Key").'</label>
+							<div class="col-lg-9">
+								<input type="text" name="merchant_key" value="' . $merchant_key . '"  class="" required="required"/>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="control-label col-lg-3 required"> '.$this->l("Website").'</label>
+							<div class="col-lg-9">
+								<input type="text" name="website" value="' . $website . '"  class="" required="required"/>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="control-label col-lg-3 required"> '.$this->l("Industry Type").'</label>
+							<div class="col-lg-9">
+								<input type="text" name="industry_type" value="' . $industry_type . '"  class="" required="required"/>
+							</div>
+						</div>
+						<div class="form-group hidden">
+							<label class="control-label col-lg-3 required"> '.$this->l("Channel Id").'</label>
+							<div class="col-lg-9">
+								<input type="text" name="channel_id" value="' . $channel_id . '"  class="" required="required"/>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="control-label col-lg-3 required"> '.$this->l("Transaction Url").'</label>
+							<div class="col-lg-9">
+								<input type="text" name="gateway_url" value="' . $gateway_url . '"  class="" required="required"/>
+							</div>
+						</div>
+						<div class="form-group">
+							<label class="control-label col-lg-3 required"> '.$this->l("Transaction Status Url").'</label>
+							<div class="col-lg-9">
+								<input type="text" name="status_url" value="' . $status_url . '"  class="" required="required"/>
+							</div>
+						</div>
+
+						<div class="form-group">
+							<label class="control-label col-sm-3 required" for="callback_url_status">
+								'.$this->l("Custom Callback Url").'
+							</label>
+							<div class="col-sm-9">
+								<select name="callback_url_status" id="callback_url_status" class="form-control">
+									<option value="1" '.(Configuration::get("Paytm_CALLBACK_URL_STATUS") == "1"? "selected" : "").'>'.$this->l('Enable').'</option>
+									<option value="0" '.(Configuration::get("Paytm_CALLBACK_URL_STATUS") == "0"? "selected" : "").'>'.$this->l('Disable').'</option>
+								</select>
+							</div>
+						</div>
+
+						<div class="callback_url_group form-group">
+							<label class="control-label col-sm-3 required" for="callback_url">
+								'.$this->l("Callback URL").'
+							</label>
+							<div class="col-sm-9">
+								<input type="text" name="callback_url" id="callback_url" value="'. $callback_url .'" class="form-control" '.(Configuration::get("Paytm_CALLBACK_URL_STATUS") == "0"? "readonly" : "").'/>
+							</div>
+						</div>
+
+						<div class="form-group '.(self::$debug_log == false? "hidden" : "").'">
+							<label class="control-label col-lg-3 required">'.$this->l("Enable Debug Log").'</label>
+							<div class="col-lg-9">
+								<div class="radio-inline">
+									<label><input type="radio" name="log_enable" value="1" '.(Configuration::get("Paytm_ENABLE_LOG") == 1? "checked" : "").'>Yes</label>
+								</div>
+								<div class="radio-inline">
+									<label><input type="radio" name="log_enable" value="0" '.(Configuration::get("Paytm_ENABLE_LOG") != 1? "checked" : "").'>No</label>
+								</div>
+							</div>
+						</div>
+					</div>
+					<div class="panel-footer">
+						<button type="submit" value="1" id="module_form_submit_btn" name="submitPaytm" class="btn btn-default pull-right">
+							<i class="process-icon-save"></i> Save
+						</button>
+					</div>
+				</div>
+			</form>
+			<script type="text/javascript">
+			var default_callback_url = "'.$this->getDefaultCallbackUrl().'";
+
+			function toggleCallbackUrl(){
+				if($("select[name=\"callback_url_status\"]").val() == "1"){
+					$(".callback_url_group").removeClass("hidden");
+					$("input[name=\"callback_url\"]").prop("readonly", false);
+				} else {
+					$(".callback_url_group").addClass("hidden");
+					$("#callback_url").val(default_callback_url);
+					$("input[name=\"callback_url\"]").prop("readonly", true);
+				}
+			}
+
+			$(document).on("change", "select[name=\"callback_url_status\"]", function(){
+				toggleCallbackUrl();
+			});
+			toggleCallbackUrl();
+			</script>
 		';
-    }
+	}
 
-	
-	public function hookPayment($params){
+	public function hookPayment($params) {
 		global $smarty;
 		$smarty->assign(array(
-	        'this_path' 		=> $this->_path,
-	        'this_path_ssl' 	=> Configuration::get('PS_FO_PROTOCOL').$_SERVER['HTTP_HOST'].__PS_BASE_URI__."modules/{$this->name}/"));
-	
-		return $this->display(__FILE__, 'payment.tpl');
-    }
-	
-	
+			"this_path" => $this->_path,
+			"this_path_ssl" => Configuration::get("PS_FO_PROTOCOL") . $_SERVER["HTTP_HOST"] . __PS_BASE_URI__ . "modules/{$this->name}/"));
 
-		public function execPayment($cart){
-		global $smarty,$cart;      
-        
+		return $this->display(__FILE__, "payment.tpl");
+	}
+
+	public function execPayment($cart) {
+		
+		global $smarty, $cart;
+
 		$bill_address = new Address(intval($cart->id_address_invoice));
-		$ship_address = new Address(intval($cart->id_address_delivery));
-		$bc = new Country($bill_address->id_country);
-		$sc = new Country($ship_address->id_country);				
 		$customer = new Customer(intval($cart->id_customer));
-		
-		$account_id= Configuration::get('ACCOUNT_ID');
-		$secret_key = Configuration::get('SECRET_KEY');		
-		// $mode = Configuration::get('MODE');
-		$transaction_status_url = Configuration::get('transaction_status_url');
-		$id_currency = intval(Configuration::get('PS_CURRENCY_DEFAULT'));		
-		$currency = new Currency(intval($id_currency));		
-		
-		$first_name = $bill_address->firstname;
-		$last_name = $bill_address->lastname;
-		$name = $first_name." ".$last_name;
-		$address1 = $bill_address->address1;
-		$address2 = $bill_address->address2;
-		$address = $address1." ".$address2;		
-		$city = $bill_address->city;		
-		//echo $country = $bc->iso_code; die;
-		$Code = array("AF" =>  "AFG", "AL" => "ALB", "DZ" => "DZA", "AS" => "ASM", "AD" => "AND", "AO" => "AGO", "AI" => "AIA", "AQ" => "ATA", "AG" => "ATG", "AR" => "ARG", "AM" => "ARM","AW" => "ABW", "AU" => "AUS", "AT" => "AUT", "AZ" => "AZE", "BS" => "BHS", "BH" => "BHR","BD" => "BGD", "BB" => "BRB", "BY" => "BLR", "BE" => "BEL", "BZ" => "BLZ", "BJ" => "BEN", "BM" => "BMU", "BT" => "BTN", "BO" => "BOL", "BA" => "BIH", "BW" => "BWA", "BV" => "BVT", "BR" => "BRA", "IO" => "IOT", "VG" => "VGB", "BN" => "BRN", "BG" => "BGR", "BF" => "BFA", "BI" => "BDI","KH" => "KHM", "CM" => "CMR", "CA" => "CAN", "CV" => "CPV", "KY" => "CYM", "CF" => "CAF", "TD" => "TCD", "CL" => "CHL", "CN" => "CHN", "CX" => "CXR", "CC" => "CCK", "CO" => "COL", "KM" => "COM", "CG" => "COG", "CK" => "COK", "CR" => "CRI", "CI" => "CIV", "HR" => "HRV", "CU" => "CUB", "CY" => "CYP", "CZ" => "CZE", "DK" => "DNK", "DM" => "DMA","DO" => "DOM", "TL" => "TLS", "EC" => "ECU", "EG" => "EGY", "SV" => "SLV", "GQ" => "GNQ","ER" => "ERI", "EE" => "EST", "ET" => "ETH", "FK" => "FLK","FO" => "FRO","FJ" => "FJI","FI" => "FIN","FR => FRA","FX" => "FXX","GF" => "GUF","PF" => "PYF","TF" => "ATF","GA" => "GAB","GE" => "GEO","GM" => "GMB","PS" => "PSE","DE" => "DEU","GH" => "GHA","GI" => "GIB","GR" => "GRC","GL" => "GRL","GD" => "GRD","GP" => "GLP","GU" => "GUM","GT" => "GTM","GN" => "GIN","GW" => "GNB","GY" => "GUY","HT" => "HTI","HM" => "HMD","HN" => "HND","HK" => "HKG","HU" => "HUN","IS" => "ISL","IN" => "IND","ID" => "IDN","IQ" => "IRQ","IE" => "IRL","IR" => "IRN","IL" => "ISR","IT" => "ITA","JM" => "JAM","JP" => "JPN","JO" => "JOR","KZ" => "KAZ","KE" => "KEN","KI" => "KIR","KP" => "PRK","KR" => "KOR","KW" => "KWT","KG" => "KGZ","LA" => "LAO","LV" => "LVA","LB" => "LBN","LS" => "LSO","LR" => "LBR","LY" => "LBY","LI" => "LIE","LT"=>"LTU","LU" => "LUX","MO" => "MAC","MK" => "MKD","MG" => "MDG","MW" => "MWI","MY" => "MYS","MV" => "MDV","ML" => "MLI","MT" => "MLT","MH" => "MHL","MQ" => "MTQ","MR" => "MRT","MU" => "MUS","YT" => "MYT","MX" => "MEX","FM" => "FSM","MD" => "MDA","MC" => "MCO","MN" => "MNG","MS" => "MSR","MA" => "MAR","MZ" => "MOZ","MM" => "MMR","NA" => "NAM","NR" => "NRU","NP" => "NPL","NL" => "NLD","NC" => "NCL","NZ" => "NZL","NI" => "NIC","NE" => "NER","NG" => "NGA","NU" => "NIU","NF" => "NFK","MP" => "MNP","NO" => "NOR","OM" => "OMN","PK" => "PAK","PW" => "PLW","PA" => "PAN","PG" => "PNG","PY" => "PRY","PE" => "PER","PH" => "PHL","PN" => "PCN","PL" => "POL","PT" => "PRT","PR" => "PRI","QA" => "QAT","RE" => "REU","RO" => "ROU","RU" => "RUS","RW" => "RWA","LC" => "LCA","WS" => "WSM","SM" => "SMR","ST" => "STP","SA" => "SAU","SN" => "SEN","SC" => "SYC","SL" => "SLE","SG" => "SGP","SK" => "SVK","SI" => "SVN","SB" => "SLB","SO" => "SOM","ZA" => "ZAF","ES" => "ESP","LK" => "LKA","SH" => "SHN","KN" => "KNA","PM" => "SPM","VC" => "VCT","SD" => "SDN","SR"=> "SUR","SJ" => "SJM","SZ" => "SWZ","SE" => "SWE","CH" => "CHE","SY" => "SYR","TW" => "TWN","TJ" => "TJK","TZ" => "TZA","TH" => "THA","TG" => "TGO","TK" => "TKL","TO" => "TON","TT" => "TTO","TN" => "TUN","TR" => "TUR","TM" => "TKM","TC" => "TCA","TV" => "TUV","UG" => "UGA","UA" => "UKR","AE" => "ARE","GB" => "GBR","US" => "USA","VI" => "VIR","UY" => "URY","UZ" => "UZB","VU" => "VUT","VA" => "VAT","VE" => "VEN","VN" => "VNM","WF" => "WLF","EH" => "ESH","YE" => "YEM","CS" => "SCG","ZR" => "ZAR","ZM" => "ZMB","ZW" => "ZWE","AP" => "   ","RS" => "SRB","AX" => "ALA" , "EU" => "" ,"ME" => "MNE","GG" => "GGY","JE" => "JEY","IM" => "IMN","CW" => "CUW","SX" => "SXM"); 
-		$country = $Code[$bc->iso_code];
-		$state_obj = new State($bill_address->id_state);
-		$state = $state_obj->name;
-		$phone = $bill_address->phone_mobile;
-		$postal_code = $bill_address->postcode;
-		$email = $customer->email;			
-		$qStrings = array("DR" => "{DR}");
-		$return_url = urldecode(Context::getContext()->link->getModuleLink('ebs', 'response', $qStrings, true));
-		
-		$ship_first_name = $ship_address->firstname;
-		$ship_last_name = $ship_address->lastname;
-		$ship_name = $ship_first_name." ".$ship_last_name;
-		$ship_address1 = $ship_address->address1;
-		$ship_address2 = $ship_address->address2;
-		$ship_addr = $ship_address1." ".$ship_address2;		
-		$ship_city = $ship_address->city;		
-		$ship_country = $country;
-		$ship_state_obj = new State($ship_address->id_state);
-		$ship_state = $state_obj->name;
-		$ship_phone = $ship_address->phone_mobile;
-		$ship_postal_code = $ship_address->postcode;
-		
-		
-		if (!Validate::isLoadedObject($bill_address) OR !Validate::isLoadedObject($customer))
-			return $this->l('Paytm error: (invalid address or customer)');
-		
-		$amount = $cart->getOrderTotal(true,Cart::BOTH);
-		
-		$ref_no = intval($cart->id);
-		//$return_url = 'http://'.htmlspecialchars($_SERVER['HTTP_HOST'], ENT_COMPAT, 'UTF-8').__PS_BASE_URI__.'modules/ebs/response.php?DR={DR}&cart_id='.intval($cart->id);
-		$hash = $secret_key ."|". $account_id. "|". $amount . "|".$ref_no."|".html_entity_decode($return_url);
-		$securehash = md5($hash);
-		$reference_no = intval($cart->id);
-		$description = "Order ID is ".$reference_no;
-		$order_id =  $ref_no;
-		$date = date('Y-m-d');
-		$industry_type = Configuration::get('PayTM_MERCHANT_INDUSTRY_TYPE');
-        $channel_id = Configuration::get('PayTM_MERCHANT_CHANNEL_ID');
-        $website = Configuration::get('PayTM_MERCHANT_WEBSITE');
-		$paytmurl = Configuration::get('PayTM_GATEWAY_URL');
-		$merchant_id = Configuration::get('PayTM_MERCHANT_ID');
-        $secret_key = Configuration::get('PayTM_SECRET_KEY');
-        $cust_id = intval($cart->id_customer);
-		$callback = Configuration::get('PayTM_ENABLE_CALLBACK');
-        /*$mode = Configuration::get('PayTM_MODE');
-        $mod = $mode;
-        if ($mod == "TEST")
-           $mode = 0;
-        else
-           $mode = 1;*/
-		
-		
-		$mobile_no='';
-		$email ='';
-		try{
-			$mobile_no= preg_replace('#[^0-9]{0,13}#is','',$bill_address->phone_mobile);
-		}catch(Exception $e){
-		
+
+		if (!Validate::isLoadedObject($bill_address) OR ! Validate::isLoadedObject($customer))
+			return $this->l("Paytm error: (invalid address or customer)");
+
+
+		$order_id = intval($cart->id);
+
+		// $order_id = "RHL_" . strtotime("now") . "__" . $order_id; // just for testing
+
+		$amount = $cart->getOrderTotal(true, Cart::BOTH);
+
+		$post_variables = array(
+			"MID" => Configuration::get("Paytm_MERCHANT_ID"),
+			"ORDER_ID" => $order_id,
+			"CUST_ID" => intval($cart->id_customer),
+			"TXN_AMOUNT" => $amount,
+			"CHANNEL_ID" => Configuration::get("Paytm_MERCHANT_CHANNEL_ID"),
+			"INDUSTRY_TYPE_ID" => Configuration::get("Paytm_MERCHANT_INDUSTRY_TYPE"),
+			"WEBSITE" => Configuration::get("Paytm_MERCHANT_WEBSITE"),
+		);
+
+		if(isset($bill_address->phone_mobile) && trim($bill_address->phone_mobile) != "")
+			$post_variables["MOBILE_NO"] = preg_replace("#[^0-9]{0,13}#is", "", $bill_address->phone_mobile);
+
+		if(isset($customer->email) && trim($customer->email) != "")
+			$post_variables["EMAIL"] = $customer->email;
+
+		if (Configuration::get("Paytm_CALLBACK_URL_STATUS") == "0")
+			$post_variables["CALLBACK_URL"] = $this->getDefaultCallbackUrl();
+		else
+			$post_variables["CALLBACK_URL"] = Configuration::get("Paytm_CALLBACK_URL");
+
+
+		$post_variables["CHECKSUMHASH"] = getChecksumFromArray($post_variables, Configuration::get("Paytm_MERCHANT_KEY"));
+
+
+		/* make log for all payment request */
+		if(Configuration::get('Paytm_ENABLE_LOG')){
+			$log_entry = "Request Type: Process Transaction (DEFAULT)". PHP_EOL;
+			$log_entry .= "Request URL: " . Configuration::get("Paytm_GATEWAY_URL") . PHP_EOL;
+			$log_entry .= "Request Params: " . print_r($post_variables, true) .PHP_EOL.PHP_EOL;
+			Paytm::addLog($log_entry, __FILE__, __LINE__);
 		}
-		
-		try{
-			$email = $customer->email;
-		}catch(Exception $e){
-		
+		/* make log for all payment request */
+
+		$smarty->assign(
+						array(
+							"paytm_post" => $post_variables,
+							"action" => Configuration::get("Paytm_GATEWAY_URL")
+							)
+					);
+
+		return $this->display(__FILE__, "payment_execution.tpl");
+	}
+
+	public function hookPaymentReturn($params) {
+		if (!$this->active)
+			return;
+
+		$state = $params["objOrder"]->getCurrentState();
+		if ($state == Configuration::get("Paytm_ID_ORDER_SUCCESS")) {
+			$this->smarty->assign(array(
+				"status" => "ok",
+				"id_order" => $params["objOrder"]->id
+			));
+		} else
+			$this->smarty->assign("status", "failed");
+		return $this->display(__FILE__, "payment_return.tpl");
+	}
+
+
+	public static function addLog($message, $file = null, $line = null){
+
+		// if log is disabled by module itself then return true to pretend everything working fine
+		if(self::$debug_log == false){
+			return true;
 		}
+
+		try {
 			
-		$post_variables = Array(
-            "MID" => $merchant_id,
-            "ORDER_ID" => $order_id,
-            "CUST_ID" => $cust_id,
-            "TXN_AMOUNT" => $amount,
-            "CHANNEL_ID" => $channel_id,
-            "INDUSTRY_TYPE_ID" => $industry_type,
-            "WEBSITE" => $website,
-			"MOBILE_NO" => $mobile_no,
-			"EMAIL" => $email
-        );
-		$callback_html='';
-		
-		if(! empty($callback) && stripos($callback,'on') !==false){
-			$protocol='http://';
-			$host='';
+			$log_file = __DIR__."/paytm.log";
+			$handle = fopen($log_file, "a+");
 			
-			
-			if (isset($_SERVER['HTTPS']) && (($_SERVER['HTTPS'] == 'on') || ($_SERVER['HTTPS'] == '1'))) {
-				$protocol='https://';
+			// if there is some permission issue
+			if($handle == false){
+				return "Unable to write log file (".$log_file."). Please provide appropriate permission to enable log.";
 			}
-			
-			if (isset($_SERVER["HTTP_HOST"]) && ! empty($_SERVER["HTTP_HOST"])) {
-				$host=$_SERVER["HTTP_HOST"];
+
+			// append Indian Standard Time for each log
+			$date = new DateTime();
+			$date->setTimeZone(new DateTimeZone("Asia/Kolkata"));
+			$log_entry = $date->format('Y-m-d H:i:s')."(IST)".PHP_EOL;
+
+			if($file && $line){
+				$log_entry .= $file."#".$line.PHP_EOL;
+			} else if($file){
+				$log_entry .= $file.PHP_EOL;
+			} else if($line){
+				$log_entry .= $line.PHP_EOL;
 			}
-			$callback_html = "<input type='hidden' name='CALLBACK_URL' value='" . $protocol . $host . __PS_BASE_URI__  . 'index.php?fc=module&module=paytm&controller=response' ."'/>";
-			$post_variables['CALLBACK_URL']=$protocol . $host . __PS_BASE_URI__  . 'index.php?fc=module&module=paytm&controller=response';
+
+			$log_entry .= $message.PHP_EOL.PHP_EOL;
+
+			fwrite($handle, $log_entry);
+			fclose($handle);
+
+		} catch(Exception $e){
+
 		}
-		
-        $checksum = getChecksumFromArray($post_variables, $secret_key);
-		$smarty->assign(array(
-            'merchant_id' =>  $merchant_id,
-            'paytmurl' => $paytmurl,
-            'date' => $date,
-		    'order_id' => $order_id,
-            'amount' => $amount,
-            'website' => $website,
-            'industry_type' => $industry_type,
-            'channel_id' => $channel_id,
-            'cust_id' => $cust_id,
-			'mobile_no' => $mobile_no,
-			'email' => $email,
-			'callback_html' => $callback_html,
-            'checksum' => $checksum
-        ));
-		return $this->display(__FILE__, 'payment_execution.tpl');
-    }
+
+		return true;
+	}
+
 }
 ?>
