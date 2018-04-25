@@ -223,10 +223,12 @@ class Paytm extends PaymentModule
 
 		$last_updated = "";
 		$path = __DIR__."/paytm_version.txt";
-		$handle = fopen($path, "r");
-		if($handle !== false){
-			$date = fread($handle, 10); // i.e. DD-MM-YYYY or 25-04-2018
-			$last_updated = '<div class="pull-left"><p>Last Updated: '. date("d F Y", strtotime($date)) .'</p></div>';
+		if(file_exists($path)){
+			$handle = fopen($path, "r");
+			if($handle !== false){
+				$date = fread($handle, 10); // i.e. DD-MM-YYYY or 25-04-2018
+				$last_updated = '<div class="pull-left"><p>Last Updated: '. date("d F Y", strtotime($date)) .'</p></div>';
+			}
 		}
 
 		$this->bootstrap = true;

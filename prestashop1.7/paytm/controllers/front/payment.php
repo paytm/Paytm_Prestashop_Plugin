@@ -21,7 +21,7 @@ class PaytmPaymentModuleFrontController extends ModuleFrontController {
 
 		$order_id = intval($cart->id);
 
-		$order_id = "RHL_" . strtotime("now") . "__" . $order_id; // just for testing
+		// $order_id = "RHL_" . strtotime("now") . "__" . $order_id; // just for testing
 
 		$amount = $cart->getOrderTotal(true, Cart::BOTH);
 
