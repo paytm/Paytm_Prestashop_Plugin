@@ -9,10 +9,10 @@
  7. After you have installed plugin, logout from the administrator area.
 
 # Paytm PG URL Details
-	staging	
-		Transaction URL             => https://securegw-stage.paytm.in/theia/processTransaction
-		Transaction Status Url      => https://securegw-stage.paytm.in/merchant-status/getTxnStatus
+	* Staging	
+		* Transaction URL             => https://securegw-stage.paytm.in/theia/processTransaction
+		* Transaction Status Url      => https://securegw-stage.paytm.in/merchant-status/getTxnStatus
 
-	Production
-		Transaction URL             => https://securegw.paytm.in/theia/processTransaction
-		Transaction Status Url      => https://securegw.paytm.in/merchant-status/getTxnStatus
+	* Production
+		* Transaction URL             => https://securegw.paytm.in/theia/processTransaction
+		* Transaction Status Url      => https://securegw.paytm.in/merchant-status/getTxnStatus
