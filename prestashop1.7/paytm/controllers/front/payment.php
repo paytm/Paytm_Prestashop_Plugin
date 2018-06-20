@@ -49,10 +49,21 @@ class PaytmPaymentModuleFrontController extends ModuleFrontController {
 
 		$post_variables["CHECKSUMHASH"] = getChecksumFromArray($post_variables, Configuration::get("Paytm_MERCHANT_KEY"));
 
+
+		// enable promo code interface either if local validation is disabled
+		// or if validation is enabled and there is any promo code saved in database
+		if(!Configuration::get("Paytm_PROMO_CODE_VALIDATION") || 
+			(Configuration::get("Paytm_PROMO_CODE_VALIDATION") && Configuration::get("Paytm_PROMO_CODES") && trim(Configuration::get("Paytm_PROMO_CODES")) != "")) {
+			$show_promo_code = true;
+		} else {
+			$show_promo_code = false;
+		}
+
 		$smarty->assign(
 						array(
 							"paytm_post" => $post_variables,
-							"action" => Configuration::get("Paytm_GATEWAY_URL")
+							"action" => Configuration::get("Paytm_GATEWAY_URL"),
+							"show_promo_code" => $show_promo_code
 							)
 					);
 		
