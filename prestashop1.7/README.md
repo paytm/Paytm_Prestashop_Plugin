@@ -1,4 +1,4 @@
-# Prestashop 1.6
+# Prestashop 1.7
   
   1. You can download the Prestashop plug-in.
   2. Extract and copy the Prestashop folder in your server.

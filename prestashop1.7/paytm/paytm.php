@@ -497,12 +497,15 @@ class paytm extends PaymentModule
 		$post_variables["CHECKSUMHASH"] = getChecksumFromArray($post_variables, Configuration::get("Paytm_MERCHANT_KEY"));
 
 
-		// check Promo Code Status interface
-		if(Configuration::get("Paytm_PROMO_CODE_STATUS")) {
+		// enable promo code interface either if local validation is disabled
+		// or if validation is enabled and there is any promo code saved in database
+		if(!Configuration::get("Paytm_PROMO_CODE_VALIDATION") || 
+			(Configuration::get("Paytm_PROMO_CODE_VALIDATION") && Configuration::get("Paytm_PROMO_CODES") && trim(Configuration::get("Paytm_PROMO_CODES")) != "")) {
 			$show_promo_code = true;
 		} else {
 			$show_promo_code = false;
 		}
+
 
 		$smarty->assign(
 						array(
