@@ -6,8 +6,8 @@
   4. Go to “installed modules” option in “Modules and Services” tab and enable the Paytm payment mode.
   5. Edit and save the below configuration in your Prestashop admin panel
       
-      * Merchant ID             - Staging/Production MID provided by Paytm
-      * Merchant Key            - Staging Key provided by Paytm
+      * Merchant ID             - MID provided by Paytm
+      * Merchant Key            - Key provided by Paytm
       * Transaction URL         
         * Staging     - https://securegw-stage.paytm.in/theia/processTransaction
         * Production  - https://securegw.paytm.in/theia/processTransaction
