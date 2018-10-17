@@ -6,7 +6,7 @@
 
 {if $show_promo_code }
 	<div id="promo-code-section">
-		<section class="form-fields">
+		<div class="form-fields">
 			<div class="form-group row">
 				<label class="col-md-3 form-control-label">{l s='Have Promo Code?'}</label>
 				<div class="col-lg-6">
@@ -18,7 +18,7 @@
 					</div>
 				</div>
 			</div>
-		</section>
+		</div>
 	</div>
 	<style>
 	.input-group.has-error{
@@ -89,7 +89,7 @@
 	*/
 	</script>
 {else}
-	<section>
+	<div>
 	  <p>{l s='You will be redirected to Paytm to complete your payment.' mod='paytm'}</p>
-	</section>
+	</div>
 {/if}
