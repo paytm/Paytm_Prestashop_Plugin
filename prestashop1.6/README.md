@@ -21,4 +21,6 @@
 
   6. Paytm is now installed for your website. You can start accepting payment through Paytm.
 
+See Video : https://www.youtube.com/watch?v=tnVFnt6ljRQ
+
 # In case of any query, please contact to Paytm.

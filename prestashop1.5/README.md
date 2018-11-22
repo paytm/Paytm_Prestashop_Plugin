@@ -16,3 +16,5 @@
 	* Production
 		* Transaction URL             => https://securegw.paytm.in/theia/processTransaction
 		* Transaction Status Url      => https://securegw.paytm.in/merchant-status/getTxnStatus
+
+See Video : https://www.youtube.com/watch?v=tnVFnt6ljRQ
