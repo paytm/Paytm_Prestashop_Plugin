@@ -247,7 +247,7 @@ class Paytm extends PaymentModule {
 								<input type="text" name="industry_type" value="' . $industry_type . '"  class="" required="required"/>
 							</div>
 						</div>
-						<div class="form-group hidden">
+						<div class="form-group">
 							<label class="control-label col-lg-3 required"> '.$this->l("Channel Id").'</label>
 							<div class="col-lg-9">
 								<input type="text" name="channel_id" value="' . $channel_id . '"  class="" required="required"/>
