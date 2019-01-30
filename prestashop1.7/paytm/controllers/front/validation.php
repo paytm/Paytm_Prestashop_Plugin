@@ -17,6 +17,13 @@ class PaytmValidationModuleFrontController extends ModuleFrontController
 
 	public function postProcess()
 	{
+		$cart = $this->context->cart;
+		$cart_id = $cart->id;
+
+		if ($cart->id == null || $cart->id_customer == 0 || $cart->id_address_invoice == 0 || !$this->module->active) {
+			Tools::redirect('index.php?controller=order&step=1');
+		}
+		
 		$merchant_id = Configuration::get('Paytm_MERCHANT_ID');
 		$secret_key = Configuration::get('Paytm_MERCHANT_KEY');
 
