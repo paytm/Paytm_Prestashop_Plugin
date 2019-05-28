@@ -33,6 +33,11 @@ class PaytmValidationModuleFrontController extends ModuleFrontController
 		$res_desc = $_POST['RESPMSG'];
 		$checksum_recv = $_POST['CHECKSUMHASH'];
 		$order_amount = $_POST['TXNAMOUNT'];
+
+		$extra_params = array(); // extra order params to attach with order
+		if(isset($_POST['TXNID'])) {
+			$extra_params['transaction_id'] = $_POST['TXNID'];
+		}
 		
 		$status_code = "";
 		$bool = false;
@@ -54,6 +59,11 @@ class PaytmValidationModuleFrontController extends ModuleFrontController
 		
 			if ($res_code == "01") {
 				$responseParamList = callNewAPI(Configuration::get('Paytm_TRANSACTION_STATUS_URL'), $requestParamList);
+
+				if(isset($responseParamList['TXNID'])) {
+					$extra_params['transaction_id'] = $responseParamList['TXNID'];
+				}
+				
 				if($responseParamList['STATUS']=='TXN_SUCCESS' && $responseParamList['TXNAMOUNT']==$amount)
 				{
 					$status_code = "Ok";
@@ -89,7 +99,7 @@ class PaytmValidationModuleFrontController extends ModuleFrontController
 
 		$customer = new Customer($cart->id_customer);
 
-		$this->module->validateOrder((int)$cart_id,  $status, (float)$amount, "Paytm", null, null, null, false, $customer->secure_key);
+		$this->module->validateOrder((int)$cart_id,  $status, (float)$amount, "Paytm", null, $extra_params, null, false, $customer->secure_key);
 
 		if ($status == Configuration::get('Paytm_ID_ORDER_SUCCESS')) {
 			Tools::redirect('index.php?controller=order-confirmation&id_cart='.(int)$cart->id.'&id_module='.(int)$this->module->id.'&id_order='.$this->module->currentOrder.'&key='.$customer->secure_key);
