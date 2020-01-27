@@ -28,3 +28,4 @@ class PaytmPaymentModuleFrontController extends ModuleFrontController {
 		}
 	}
 }
+

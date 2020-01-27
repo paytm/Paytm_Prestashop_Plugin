@@ -2,52 +2,55 @@
 if (!defined("_PS_VERSION_"))
 	exit;
 
-require_once(dirname(__FILE__) . "/lib/encdec_paytm.php");
+require_once(dirname(__FILE__).'/lib/PaytmHelper.php');
+require_once(dirname(__FILE__).'/lib/PaytmChecksum.php');
 
 class Paytm extends PaymentModule {
-
+	
 	private $_html = "";
 	private $_postErrors = array();
-	private static $debug_log = false;
 
 	public function __construct() {
-		$this->name = "paytm";
-		$this->tab = "payments_gateways";
-		$this->version = "3.0";
-		$this->author = "Paytm Development Team";
+		$this->name 		= PaytmConstants::PAYTM_PLUGIN_NAME;
+		$this->tab 			= PaytmConstants::PAYTM_TAB;
+		$this->version 		= PaytmConstants::PLUGIN_VERSION;
+		$this->author 		= PaytmConstants::PAYTM_PLUGIN_AUTHOR;
+	
 
 		parent::__construct();
-		
-		$this->page = basename(__FILE__, ".php");
-		$this->displayName = $this->l("Paytm");
-		$this->description = $this->l("Module for accepting payments by Paytm");
+		$this->page         = basename(__FILE__, ".php");
+		$this->displayName 	= $this->l(PaytmConstants::PAYTM_DISPLAYNAME);
+		$this->description 	= $this->l(PaytmConstants::PAYTM_DESCRIPTION);
 	}
-
+    /**
+	* get Default callback url
+	*/
 	private function getDefaultCallbackUrl(){
-		return $this->context->link->getModuleLink('paytm','response');
+		if(!empty(PaytmConstants::CUSTOM_CALLBACK_URL)){
+		    return PaytmConstants::CUSTOM_CALLBACK_URL;
+		}else{
+		    return $this->context->link->getModuleLink('paytm','response');
+		}
 	}
 
 	public function install() {
 		if (parent::install()) {
 			Configuration::updateValue("Paytm_MERCHANT_ID", "");
 			Configuration::updateValue("Paytm_MERCHANT_KEY", "");
-			Configuration::updateValue("Paytm_TRANSACTION_STATUS_URL", "");
-			Configuration::updateValue("Paytm_GATEWAY_URL", "");
+			Configuration::updateValue("Paytm_ENVIRONMENT", "");
 			Configuration::updateValue("Paytm_MERCHANT_INDUSTRY_TYPE", "");
-			Configuration::updateValue("Paytm_MERCHANT_CHANNEL_ID", "WEB");
 			Configuration::updateValue("Paytm_MERCHANT_WEBSITE", "");
-			Configuration::updateValue("Paytm_CALLBACK_URL_STATUS", 0);
-			Configuration::updateValue("Paytm_CALLBACK_URL", $this->getDefaultCallbackUrl());
-			Configuration::updateValue("Paytm_ENABLE_LOG", 0);
 
 			$this->registerHook("payment");
 			$this->registerHook("paymentReturn");
+			$this->registerHook('displayAdminOrder');
 			if (!Configuration::get("Paytm_ORDER_STATE")) {
-				$this->setPaytmOrderState("Paytm_ID_ORDER_SUCCESS", "Payment Received", "#b5eaaa");
-				$this->setPaytmOrderState("Paytm_ID_ORDER_FAILED", "Payment Failed", "#E77471");
-				$this->setPaytmOrderState("Paytm_ID_ORDER_PENDING", "Payment Pending", "#F4E6C9");
+				$this->setPaytmOrderState("Paytm_ID_ORDER_SUCCESS", PaytmConstants::PAYTM_PAYMENT_SUCCESS, "#b5eaaa");
+				$this->setPaytmOrderState("Paytm_ID_ORDER_FAILED", PaytmConstants::PAYTM_PAYMENT_FAILED, "#E77471");
+				$this->setPaytmOrderState("Paytm_ID_ORDER_PENDING", PaytmConstants::PAYTM_PAYMENT_PENDING, "#F4E6C9");
 				Configuration::updateValue("Paytm_ORDER_STATE", "1");
 			}
+			$this->install_db();
 			return true;
 		} else {
 			return false;
@@ -57,165 +60,136 @@ class Paytm extends PaymentModule {
 	public function uninstall() {
 
 		if (!Configuration::deleteByName("Paytm_MERCHANT_ID") OR 
-			!Configuration::deleteByName("Paytm_MERCHANT_KEY") OR 
-			!Configuration::deleteByName("Paytm_TRANSACTION_STATUS_URL") OR 
-			!Configuration::deleteByName("Paytm_GATEWAY_URL") OR 
+			!Configuration::deleteByName("Paytm_MERCHANT_KEY") OR  
+			!Configuration::deleteByName("Paytm_ENVIRONMENT") OR 
 			!Configuration::deleteByName("Paytm_MERCHANT_INDUSTRY_TYPE") OR 
-			!Configuration::deleteByName("Paytm_MERCHANT_CHANNEL_ID") OR 
 			!Configuration::deleteByName("Paytm_MERCHANT_WEBSITE") OR 
-			!Configuration::deleteByName("Paytm_CALLBACK_URL_STATUS") OR 
-			!Configuration::deleteByName("Paytm_CALLBACK_URL") OR 
-			!Configuration::deleteByName("Paytm_ENABLE_LOG") OR 
 			!parent::uninstall()) {
 			return false;
 		}
-
+		
+		$this->uninstall_db();
+		
 		return true;
 	}
 
 	public function setPaytmOrderState($var_name, $status, $color) {
+
 		$orderState = new OrderState();
 		$orderState->name = array();
 		foreach (Language::getLanguages() AS $language) {
 			$orderState->name[$language["id_lang"]] = $status;
 		}
-		$orderState->send_email = false;
-		$orderState->color = $color;
-		$orderState->hidden = false;
-		$orderState->delivery = false;
-		$orderState->logable = true;
-		$orderState->invoice = true;
+		$orderState->send_email		= false;
+		$orderState->color			= $color;
+		$orderState->hidden			= false;
+		$orderState->delivery		= false;
+		$orderState->logable		= true;
+		$orderState->invoice		= true;
 		if ($orderState->add())
 			Configuration::updateValue($var_name, (int) $orderState->id);
+			
 		return true;
+
 	}
 
 	public function getContent() {
+
 		$this->_html = "<h2>" . $this->displayName . "</h2>";
 		if (isset($_POST["submitPaytm"])) {
-
 			// trim all values
 			foreach($_POST as &$v){
 				$v = trim($v);
 			}
-
 			if (!isset($_POST["merchant_id"]) || $_POST["merchant_id"] == ""){
 				$this->_postErrors[] = $this->l("Please Enter your Merchant ID.");
 			}
-
 			if (!isset($_POST["merchant_key"]) || $_POST["merchant_key"] == ""){
 				$this->_postErrors[] = $this->l("Please Enter your Merchant Key.");
 			}
-
 			if (!isset($_POST["industry_type"]) || $_POST["industry_type"] == ""){
 				$this->_postErrors[] = $this->l("Please Enter your Industry Type.");
 			}
-
-			if (!isset($_POST["channel_id"]) || $_POST["channel_id"] == ""){
-				$this->_postErrors[] = $this->l("Please Enter your Channel ID.");
-			}
-
 			if (!isset($_POST["website"]) || $_POST["website"] == ""){
 				$this->_postErrors[] = $this->l("Please Enter your Website.");
 			}
-
-			if (!isset($_POST["gateway_url"]) || $_POST["gateway_url"] == ""){
-				$this->_postErrors[] = $this->l("Please Enter Gateway Url.");
+			if (!isset($_POST["paytm_environment"]) || $_POST["paytm_environment"] == "" || !in_array($_POST["paytm_environment"],array('0','1'))){
+				$this->_postErrors[] = $this->l("Please Select Environment.");
 			}
-
-			if (!isset($_POST["status_url"]) || $_POST["status_url"] == ""){
-				$this->_postErrors[] = $this->l("Please Enter Transaction Status URL .");
-			}
-
-			if (!isset($_POST["callback_url"]) || $_POST["callback_url"] == ""){
-				$this->_postErrors[] = $this->l("Please Enter Callback URL.");
-			}
-
-			// if log is enabled then try to write log file else show permission error
-			if (isset($_POST["log_enable"])  && !empty($_POST["log_enable"])){
-				$writeable = Paytm::addLog("Log Enabled", __FILE__, __LINE__);
-				if($writeable != true){
-					$this->_postErrors[] = $this->l($res);
-				}
-			}
-
 			if (!sizeof($this->_postErrors)) {
-				Configuration::updateValue("Paytm_MERCHANT_ID", $_POST["merchant_id"]);
-				Configuration::updateValue("Paytm_MERCHANT_KEY", $_POST["merchant_key"]);
-				Configuration::updateValue("Paytm_GATEWAY_URL", $_POST["gateway_url"]);
-				Configuration::updateValue("Paytm_MERCHANT_INDUSTRY_TYPE", $_POST["industry_type"]);
-				Configuration::updateValue("Paytm_MERCHANT_CHANNEL_ID", $_POST["channel_id"]);
-				Configuration::updateValue("Paytm_MERCHANT_WEBSITE", $_POST["website"]);
-				Configuration::updateValue("Paytm_TRANSACTION_STATUS_URL", $_POST["status_url"]);
-				Configuration::updateValue("Paytm_CALLBACK_URL_STATUS", $_POST["callback_url_status"]);
-				Configuration::updateValue("Paytm_CALLBACK_URL", $_POST["callback_url"]);
-				Configuration::updateValue("Paytm_ENABLE_LOG", $_POST["log_enable"]);
-				$this->displayConf();
+				if(!PaytmHelper::validateCurl(PaytmHelper::getTransactionStatusURL($_POST["paytm_environment"]))){
+					$this->displayCurlerror();
+				}else{
+					Configuration::updateValue("Paytm_MERCHANT_ID", $_POST["merchant_id"]);
+					Configuration::updateValue("Paytm_MERCHANT_KEY", $_POST["merchant_key"]);
+					Configuration::updateValue("Paytm_ENVIRONMENT", $_POST["paytm_environment"]);
+					Configuration::updateValue("Paytm_MERCHANT_INDUSTRY_TYPE", $_POST["industry_type"]);
+					Configuration::updateValue("Paytm_MERCHANT_WEBSITE", $_POST["website"]);
+					$this->displayConf();
+				}
 			} else {
 				$this->displayErrors();
 			}
 		}
-
 		$this->_displayPaytm();
 		$this->_displayFormSettings();
+
 		return $this->_html;
 	}
 
+    public function displayCurlerror(){
+
+		$this->_html .='<div class="alert error">'.PaytmConstants::ERROR_CURL_WARNING.
+		               '</div>';
+	}
+
 	public function displayConf() {
-		$this->_html .= '
-		<div class="conf confirm">
-			<img src="../img/admin/ok.gif" alt="' . $this->l("Confirmation") . '" />
-			' . $this->l("Settings updated") . '
-		</div>';
+
+		$this->_html .= '<div class="conf confirm">
+			                <img src="../img/admin/ok.gif" alt="' . $this->l("Confirmation") . '" />' . $this->l("Settings updated") . '
+		                 </div>';
 	}
 
 	public function displayErrors() {
+
 		$nbErrors = sizeof($this->_postErrors);
 		$this->_html .= '
 		<div class="alert error">
 			<h3>' . ($nbErrors > 1 ? $this->l("There are") : $this->l("There is")) . ' ' . $nbErrors . ' ' . ($nbErrors > 1 ? $this->l("errors") : $this->l("error")) . '</h3>
 			<ol>';
-		foreach ($this->_postErrors AS $error)
-			$this->_html .= "<li>" . $error . "</li>";
-		$this->_html .= '
+		    foreach ($this->_postErrors AS $error)
+			  $this->_html .= "<li>" . $error . "</li>";
+		      $this->_html .= '
 			</ol>
 		</div>';
 	}
 
 	public function _displayPaytm() {
-		$this->_html .= '
-		<img src="../modules/paytm/logo.png" style="float:left; padding: 0px; margin-right:15px;" />
-		<b>' . $this->l("This module allows you to accept payments by Paytm.") . '</b><br /><br />
-		' . $this->l("If the client chooses this payment mode, your Paytm account will be automatically credited.") . '<br />
+
+		$this->_html .= '<img src="../modules/paytm/logo.png" style="float:left; padding: 0px; margin-right:15px;" />
+		<b>' . $this->l("This module allows you to accept payments by Paytm.") . '</b><br /><br />' . $this->l("If the client chooses this payment mode, your Paytm account will be automatically credited.") . '<br />
 		' . $this->l("You need to configure your Paytm account first before using this module. Please enter following details provided to you by Paytm.") . '
 		<br /><br /><br />';
 	}
 
 	public function _displayFormSettings() {
 
-		$merchant_id = isset($_POST["merchant_id"])? 
-							$_POST["merchant_id"] : Configuration::get("Paytm_MERCHANT_ID");
+		$field_value = array();
+		$field_value = $this->getfieldvalues($_POST);
 
-		$merchant_key = isset($_POST["merchant_key"])? 
-							$_POST["merchant_key"] : Configuration::get("Paytm_MERCHANT_KEY");
+		//last updated time of paytm plugin
+		$last_updated = date("d F Y", strtotime(PaytmConstants::LAST_UPDATED)) .' - '.PaytmConstants::PLUGIN_VERSION;	
+		$curl_version = PaytmHelper::getcURLversion();
 
-		$industry_type = isset($_POST["industry_type"])? 
-							$_POST["industry_type"] : Configuration::get("Paytm_MERCHANT_INDUSTRY_TYPE");
-
-		$channel_id = isset($_POST["channel_id"])? 
-							$_POST["channel_id"] : Configuration::get("Paytm_MERCHANT_CHANNEL_ID");
-
-		$website = isset($_POST["website"])? 
-							$_POST["website"] : Configuration::get("Paytm_MERCHANT_WEBSITE");
-
-		$gateway_url = isset($_POST["gateway_url"])? 
-							$_POST["gateway_url"] : Configuration::get("Paytm_GATEWAY_URL");
-
-		$status_url = isset($_POST["status_url"])? 
-							$_POST["status_url"] : Configuration::get("Paytm_TRANSACTION_STATUS_URL");
-
-		$callback_url = isset($_POST["callback_url"])? 
-							$_POST["callback_url"] : Configuration::get("Paytm_CALLBACK_URL");
+		$footer_text    = '<hr/>
+		<div class="text-center">
+		   <b>PHP Version:</b> '. PHP_VERSION .' |
+		   <b>Curl Version:</b> '. $curl_version .' | 
+		   <b>Prestashop Version:</b> '. _PS_VERSION_ .' | 
+		   <b>Last Updated:</b> '.$last_updated.' | 
+		   <a href="'.PaytmConstants::PLUGIN_DOC_URL.'" target="_blank">Developer Docs</a>
+		</div>
+	  <hr/>';
 
 		$this->bootstrap = true;
 		$this->_html .= '
@@ -226,77 +200,35 @@ class Paytm extends PaymentModule {
 						<div class="form-group">
 							<label class="control-label col-lg-3 required"> '.$this->l("Merchant ID").'</label>
 							<div class="col-lg-9">
-								<input type="text" name="merchant_id" value="' . $merchant_id . '"  class="" required="required"/>
+								<input type="text" name="merchant_id" value="' . $field_value['merchant_id'] . '"  class="" required="required"/>
 							</div>
 						</div>
 						<div class="form-group">
 							<label class="control-label col-lg-3 required"> '.$this->l("Merchant Key").'</label>
 							<div class="col-lg-9">
-								<input type="text" name="merchant_key" value="' . $merchant_key . '"  class="" required="required"/>
+								<input type="text" name="merchant_key" value="' . $field_value['merchant_key'] . '"  class="" required="required"/>
 							</div>
 						</div>
 						<div class="form-group">
 							<label class="control-label col-lg-3 required"> '.$this->l("Website").'</label>
 							<div class="col-lg-9">
-								<input type="text" name="website" value="' . $website . '"  class="" required="required"/>
+								<input type="text" name="website" value="' . $field_value['website'] . '"  class="" required="required"/>
 							</div>
 						</div>
 						<div class="form-group">
 							<label class="control-label col-lg-3 required"> '.$this->l("Industry Type").'</label>
 							<div class="col-lg-9">
-								<input type="text" name="industry_type" value="' . $industry_type . '"  class="" required="required"/>
+								<input type="text" name="industry_type" value="' . $field_value['industry_type'] . '"  class="" required="required"/>
 							</div>
-						</div>
-						<div class="form-group">
-							<label class="control-label col-lg-3 required"> '.$this->l("Channel Id").'</label>
-							<div class="col-lg-9">
-								<input type="text" name="channel_id" value="' . $channel_id . '"  class="" required="required"/>
-							</div>
-						</div>
-						<div class="form-group">
-							<label class="control-label col-lg-3 required"> '.$this->l("Transaction Url").'</label>
-							<div class="col-lg-9">
-								<input type="text" name="gateway_url" value="' . $gateway_url . '"  class="" required="required"/>
-							</div>
-						</div>
-						<div class="form-group">
-							<label class="control-label col-lg-3 required"> '.$this->l("Transaction Status Url").'</label>
-							<div class="col-lg-9">
-								<input type="text" name="status_url" value="' . $status_url . '"  class="" required="required"/>
-							</div>
-						</div>
-
-						<div class="form-group">
-							<label class="control-label col-sm-3 required" for="callback_url_status">
-								'.$this->l("Custom Callback Url").'
-							</label>
-							<div class="col-sm-9">
-								<select name="callback_url_status" id="callback_url_status" class="form-control">
-									<option value="1" '.(Configuration::get("Paytm_CALLBACK_URL_STATUS") == "1"? "selected" : "").'>'.$this->l('Enable').'</option>
-									<option value="0" '.(Configuration::get("Paytm_CALLBACK_URL_STATUS") == "0"? "selected" : "").'>'.$this->l('Disable').'</option>
-								</select>
-							</div>
-						</div>
-
-						<div class="callback_url_group form-group">
-							<label class="control-label col-sm-3 required" for="callback_url">
-								'.$this->l("Callback URL").'
-							</label>
-							<div class="col-sm-9">
-								<input type="text" name="callback_url" id="callback_url" value="'. $callback_url .'" class="form-control" '.(Configuration::get("Paytm_CALLBACK_URL_STATUS") == "0"? "readonly" : "").'/>
-							</div>
-						</div>
-
-						<div class="form-group '.(self::$debug_log == false? "hidden" : "").'">
-							<label class="control-label col-lg-3 required">'.$this->l("Enable Debug Log").'</label>
-							<div class="col-lg-9">
-								<div class="radio-inline">
-									<label><input type="radio" name="log_enable" value="1" '.(Configuration::get("Paytm_ENABLE_LOG") == 1? "checked" : "").'>Yes</label>
+						</div>		
+                        <div class="form-group">
+						<label class="control-label col-lg-3 required"> '.$this->l("Environment").'</label>
+								<div class="col-lg-9">
+										<select name="paytm_environment" class="" required="required" >
+										<option '.($field_value['paytm_environment'] != "1"? "selected" : "").' value="0" >Staging</option>
+										<option '.($field_value['paytm_environment'] == "1"? "selected" : "").' value="1">Production</option>
+										</select>
 								</div>
-								<div class="radio-inline">
-									<label><input type="radio" name="log_enable" value="0" '.(Configuration::get("Paytm_ENABLE_LOG") != 1? "checked" : "").'>No</label>
-								</div>
-							</div>
 						</div>
 					</div>
 					<div class="panel-footer">
@@ -306,155 +238,228 @@ class Paytm extends PaymentModule {
 					</div>
 				</div>
 			</form>
-			<script type="text/javascript">
-			var default_callback_url = "'.$this->getDefaultCallbackUrl().'";
-
-			function toggleCallbackUrl(){
-				if($("select[name=\"callback_url_status\"]").val() == "1"){
-					$(".callback_url_group").removeClass("hidden");
-					$("input[name=\"callback_url\"]").prop("readonly", false);
-				} else {
-					$(".callback_url_group").addClass("hidden");
-					$("#callback_url").val(default_callback_url);
-					$("input[name=\"callback_url\"]").prop("readonly", true);
-				}
-			}
-
-			$(document).on("change", "select[name=\"callback_url_status\"]", function(){
-				toggleCallbackUrl();
-			});
-			toggleCallbackUrl();
-			</script>
+			'.$footer_text.'
 		';
 	}
 
+	public function getfieldvalues($data){
+
+		$field_data = array();
+		$field_data['merchant_id']        = isset($data["merchant_id"])?$data["merchant_id"] : Configuration::get("Paytm_MERCHANT_ID");
+		$field_data['merchant_key']       = isset($data["merchant_key"])?$data["merchant_key"] : Configuration::get("Paytm_MERCHANT_KEY");
+	    $field_data['industry_type']      = isset($data["industry_type"])?$data["industry_type"] : Configuration::get("Paytm_MERCHANT_INDUSTRY_TYPE");
+		$field_data['website']            = isset($data["website"])?$data["website"] : Configuration::get("Paytm_MERCHANT_WEBSITE");
+	    $field_data['paytm_environment'] = isset($data["paytm_environment"])?$data["paytm_environment"] : Configuration::get("Paytm_ENVIRONMENT");
+		
+		return $field_data;
+								
+	}
+
 	public function hookPayment($params) {
+		
+		if(PaytmConstants::ONLY_SUPPORT_INR){
+			$id_currency = intval(Configuration::get('PS_CURRENCY_DEFAULT'));
+			$currency = new Currency(intval($id_currency));
+			$currency_code =$currency->iso_code;
+			   if($currency_code != 'INR'){
+				 return false;
+				}
+			}
 		global $smarty;
 		$smarty->assign(array(
-			"this_path" => $this->_path,
+			"this_path" 	=> $this->_path,
 			"this_path_ssl" => Configuration::get("PS_FO_PROTOCOL") . $_SERVER["HTTP_HOST"] . __PS_BASE_URI__ . "modules/{$this->name}/"));
 
 		return $this->display(__FILE__, "payment.tpl");
 	}
 
 	public function execPayment($cart) {
-		
-		global $smarty, $cart;
 
-		$bill_address = new Address(intval($cart->id_address_invoice));
-		$customer = new Customer(intval($cart->id_customer));
+		global $smarty, $cart;
+		
+		$bill_address 	= new Address(intval($cart->id_address_invoice));
+		$customer 		= new Customer(intval($cart->id_customer));
 
 		if (!Validate::isLoadedObject($bill_address) OR ! Validate::isLoadedObject($customer))
 			return $this->l("Paytm error: (invalid address or customer)");
 
-
-		$order_id = intval($cart->id);
-
-		// $order_id = "RHL_" . strtotime("now") . "__" . $order_id; // just for testing
-
-		$amount = $cart->getOrderTotal(true, Cart::BOTH);
-
-		$post_variables = array(
-			"MID" => Configuration::get("Paytm_MERCHANT_ID"),
-			"ORDER_ID" => $order_id,
-			"CUST_ID" => intval($cart->id_customer),
-			"TXN_AMOUNT" => $amount,
-			"CHANNEL_ID" => Configuration::get("Paytm_MERCHANT_CHANNEL_ID"),
-			"INDUSTRY_TYPE_ID" => Configuration::get("Paytm_MERCHANT_INDUSTRY_TYPE"),
-			"WEBSITE" => Configuration::get("Paytm_MERCHANT_WEBSITE"),
-		);
-
+		$order_id = PaytmHelper::getPaytmOrderId(intval($cart->id));
+		
+		$cust_id = $email = $mobile_no = "";
 		if(isset($bill_address->phone_mobile) && trim($bill_address->phone_mobile) != "")
-			$post_variables["MOBILE_NO"] = preg_replace("#[^0-9]{0,13}#is", "", $bill_address->phone_mobile);
+			$mobile_no = preg_replace("#[^0-9]{0,13}#is", "", $bill_address->phone_mobile);
 
 		if(isset($customer->email) && trim($customer->email) != "")
-			$post_variables["EMAIL"] = $customer->email;
+			$email = $customer->email;
 
-		if (Configuration::get("Paytm_CALLBACK_URL_STATUS") == "0")
-			$post_variables["CALLBACK_URL"] = $this->getDefaultCallbackUrl();
-		else
-			$post_variables["CALLBACK_URL"] = Configuration::get("Paytm_CALLBACK_URL");
-
-
-		$post_variables["CHECKSUMHASH"] = getChecksumFromArray($post_variables, Configuration::get("Paytm_MERCHANT_KEY"));
-
-
-		/* make log for all payment request */
-		if(Configuration::get('Paytm_ENABLE_LOG')){
-			$log_entry = "Request Type: Process Transaction (DEFAULT)". PHP_EOL;
-			$log_entry .= "Request URL: " . Configuration::get("Paytm_GATEWAY_URL") . PHP_EOL;
-			$log_entry .= "Request Params: " . print_r($post_variables, true) .PHP_EOL.PHP_EOL;
-			Paytm::addLog($log_entry, __FILE__, __LINE__);
+		if(!empty($customer->email)){
+			$cust_id = $email = trim($customer->email);
+		} else if(!empty($cart->id_customer)){
+			$cust_id = intval($cart->id_customer);
+		}else{
+			$cust_id = "CUST_".$order_id;
 		}
-		/* make log for all payment request */
 
-		$smarty->assign(
-						array(
-							"paytm_post" => $post_variables,
-							"action" => Configuration::get("Paytm_GATEWAY_URL")
-							)
-					);
+		$amount         = $cart->getOrderTotal(true, Cart::BOTH);
+		$parameters = array(
+			"MID"              => Configuration::get("Paytm_MERCHANT_ID"),
+			"ORDER_ID"         => $order_id,
+			"CUST_ID"          => $cust_id,
+			"TXN_AMOUNT"       => $amount,
+			"CHANNEL_ID"       => PaytmConstants::CHANNEL_ID,
+			"INDUSTRY_TYPE_ID" => Configuration::get("Paytm_MERCHANT_INDUSTRY_TYPE"),
+			"WEBSITE"          => Configuration::get("Paytm_MERCHANT_WEBSITE"),
+			"CALLBACK_URL"     => $this->getDefaultCallbackUrl(),
+			"MOBILE_NO" 	   => $mobile_no,
+			"EMAIL" 		   => $email,
+		);
+
+		$parameters["CHECKSUMHASH"] = PaytmChecksum::generateSignature($parameters, Configuration::get("Paytm_MERCHANT_KEY"));
+				
+		$parameters["X-REQUEST-ID"] =  PaytmConstants::X_REQUEST_ID._PS_VERSION_;
+
+		$smarty->assign(array(
+							"paytm_post" 	=> $parameters,
+							"action" 		=> PaytmHelper::getTransactionURL(Configuration::get('Paytm_ENVIRONMENT'))));
 
 		return $this->display(__FILE__, "payment_execution.tpl");
+
 	}
 
 	public function hookPaymentReturn($params) {
+
 		if (!$this->active)
 			return;
 
 		$state = $params["objOrder"]->getCurrentState();
 		if ($state == Configuration::get("Paytm_ID_ORDER_SUCCESS")) {
 			$this->smarty->assign(array(
-				"status" => "ok",
+				"status"   => "ok",
 				"id_order" => $params["objOrder"]->id
 			));
 		} else
 			$this->smarty->assign("status", "failed");
+
 		return $this->display(__FILE__, "payment_return.tpl");
+
+	}
+	/**
+	* create paytm_order_data table.
+	*/
+	private function install_db() {
+		Db::getInstance()->execute("
+			CREATE TABLE IF NOT EXISTS `" . _DB_PREFIX_ . "paytm_order_data` (
+				`id` int(11) NOT NULL AUTO_INCREMENT,
+				`order_id` int(11) NOT NULL,
+				`paytm_order_id` VARCHAR(255) NOT NULL,
+				`transaction_id` VARCHAR(255) NOT NULL,
+				`status` ENUM('0', '1')  DEFAULT '0' NOT NULL,
+				`paytm_response` TEXT,
+				`date_added` DATETIME NOT NULL,
+				`date_modified` DATETIME NOT NULL,
+				PRIMARY KEY (`id`)
+			);");
+	}
+	/**
+	* drop paytm_order_data table.
+	*/
+	private function uninstall_db() {
+		Db::getInstance()->execute("DROP TABLE IF EXISTS `" . _DB_PREFIX_ . "paytm_order_data`;");
+	}
+	
+	public function hookDisplayAdminOrder($params)
+	{    
+		$id_order         = $params['id_order'];
+		$paytm_order_data = $this->getPaytmOrderData($id_order);
+
+		if($paytm_order_data){
+			$data['transaction_id']			= $paytm_order_data['transaction_id'];
+			$data['paytm_order_id']			= $paytm_order_data['paytm_order_id'];
+			$data['order_data_id']			= $paytm_order_data['id'];
+			$data['paytm_response'] 		= json_decode($paytm_order_data['paytm_response'],true);
+
+		$this->context->controller->addCSS(array($this->_path.'views/css/paytm.css'));
+							  
+		$this->context->smarty->assign(array(
+					"paytm_value" => $data));
+
+		return $this->display(__FILE__, 'views/templates/hook/paytm_order.tpl');
+		}
 	}
 
+	public function getPaytmOrderData($order_id) {
 
-	public static function addLog($message, $file = null, $line = null){
+		$query = "SELECT * FROM " . _DB_PREFIX_ . "paytm_order_data WHERE order_id = '" . (int)$order_id . "' ORDER BY id DESC";
+	    $result = Db::getInstance()->getRow($query);
+	    if ($result != false) {
+			return $result;
+	    }
+		return 0;
+    }
+   	/**
+	* ajax - fetch and save transaction status in db
+	*/
+	public function savetxnstatus() {
 
-		// if log is disabled by module itself then return true to pretend everything working fine
-		if(self::$debug_log == false){
-			return true;
-		}
+		 $json = array("success" => false, "response" => '', 'message'=>PaytmConstants::TEXT_RESPONSE_ERROR);
 
-		try {
-			
-			$log_file = __DIR__."/paytm.log";
-			$handle = fopen($log_file, "a+");
-			
-			// if there is some permission issue
-			if($handle == false){
-				return "Unable to write log file (".$log_file."). Please provide appropriate permission to enable log.";
-			}
+	    if(!empty($_POST['paytm_order_id'])){
 
-			// append Indian Standard Time for each log
-			$date = new DateTime();
-			$date->setTimeZone(new DateTimeZone("Asia/Kolkata"));
-			$log_entry = $date->format('Y-m-d H:i:s')."(IST)".PHP_EOL;
+		 		$reqParams = array(
+		 			"MID" 		=> Configuration::get("Paytm_MERCHANT_ID"),
+		 			"ORDERID" 	=> $_POST['paytm_order_id']
+		 		);
 
-			if($file && $line){
-				$log_entry .= $file."#".$line.PHP_EOL;
-			} else if($file){
-				$log_entry .= $file.PHP_EOL;
-			} else if($line){
-				$log_entry .= $line.PHP_EOL;
-			}
+			$reqParams['CHECKSUMHASH'] = PaytmChecksum::generateSignature($reqParams, Configuration::get("Paytm_MERCHANT_KEY"));	
 
-			$log_entry .= $message.PHP_EOL.PHP_EOL;
+			/* number of retries untill cURL gets success */	
+		 		$retry = 1;
+		 		do{
+					$resParams=PaytmHelper::executecUrl(PaytmHelper::getTransactionStatusURL(Configuration::get('Paytm_ENVIRONMENT')), $reqParams);
+		 			$retry++;
+		 		   }while(!$resParams['STATUS'] && $retry < PaytmConstants::MAX_RETRY_COUNT);
 
-			fwrite($handle, $log_entry);
-			fclose($handle);
+			    if(PaytmConstants::SAVE_PAYTM_RESPONSE && !empty($resParams['STATUS'])){
+		 			$update_response	=	$this->saveTxnResponse($resParams, $_POST['order_data_id']); 
+		 			if($update_response){
 
-		} catch(Exception $e){
-
-		}
-
-		return true;
+		 				$message = PaytmConstants::TEXT_RESPONSE_SUCCESS;
+		 				if($resParams['STATUS'] != 'PENDING'){
+							$message .= sprintf(PaytmConstants::TEXT_RESPONSE_STATUS_SUCCESS, $resParams['STATUS']);
+						}						
+		 				$json = array("success" => true, "response" => $update_response, 'message' => $message);
+		 			}
+		 		}
+			}	
+				
+		return json_encode($json);
 	}
+	public function saveTxnResponse($data  = array(), $id = false){
 
+		if(empty($data['STATUS'])) return false;
+
+		$status 			= (!empty($data['STATUS']) && $data['STATUS'] =='TXN_SUCCESS') ? 1 : 0;
+		$paytm_order_id 	= (!empty($data['ORDERID'])? $data['ORDERID']:'');
+		$transaction_id 	= (!empty($data['TXNID'])? $data['TXNID']:'');
+
+		if($paytm_order_id && $id){
+
+			$sql = "SELECT * from " . _DB_PREFIX_ . "paytm_order_data WHERE paytm_order_id = '" . $paytm_order_id . "'";
+			$query =  Db::getInstance()->getRow($sql);
+			if($query){
+
+				$update_response = (array)json_decode($query['paytm_response']);
+				$update_response['STATUS'] 		= $data['STATUS'];
+				$update_response['RESPCODE'] 	= $data['RESPCODE'];
+				$update_response['RESPMSG'] 	= $data['RESPMSG'];
+
+				$sql =  "UPDATE " . _DB_PREFIX_ . "paytm_order_data SET transaction_id = '" . $transaction_id . "', status = '" . (int)$status . "', paytm_response = '" . json_encode($update_response) . "', date_modified = NOW() WHERE paytm_order_id = '" . $paytm_order_id . "' AND id = '" . (int)$id . "'";
+				Db::getInstance()->execute($sql);
+				return $update_response;
+			}			
+		}		
+		return false;
+	}
 }
+
 ?>
