@@ -1,16 +1,21 @@
 <?php
 
 class PaytmConstants{
-	 CONST TRANSACTION_URL_PRODUCTION			= "https://securegw.paytm.in/order/process";
-	 CONST TRANSACTION_STATUS_URL_PRODUCTION	= "https://securegw.paytm.in/order/status";
+	CONST TRANSACTION_STATUS_URL_PRODUCTION	    = "https://securegw.paytm.in/order/status";
+	CONST TRANSACTION_STATUS_URL_STAGING		= "https://securegw-stage.paytm.in/order/status";
 
-	 CONST TRANSACTION_URL_STAGING				= "https://securegw-stage.paytm.in/order/process";
-	 CONST TRANSACTION_STATUS_URL_STAGING		= "https://securegw-stage.paytm.in/order/status";
+	CONST PRODUCTION_HOST						= "https://securegw.paytm.in/";
+	CONST STAGING_HOST							= "https://securegw-stage.paytm.in/";
+
+	CONST ORDER_PROCESS_URL						= "order/process";
+	CONST ORDER_STATUS_URL						= "order/status";
+	CONST INITIATE_TRANSACTION_URL				= "theia/api/v1/initiateTransaction";
+	CONST CHECKOUT_JS_URL						= "merchantpgpui/checkoutjs/merchants/MID.js";
 
 	 CONST SAVE_PAYTM_RESPONSE 					= true;
 	 CONST CHANNEL_ID							= "WEB";
-	 CONST APPEND_TIMESTAMP						= false;
-	 CONST ONLY_SUPPORT_INR                        = true;
+	 CONST APPEND_TIMESTAMP						= true;
+	 CONST ONLY_SUPPORT_INR                     = true;
 	 CONST X_REQUEST_ID							= "PLUGIN_PRESTASHOP_";
 
 	 CONST MAX_RETRY_COUNT						= 3;
@@ -32,6 +37,8 @@ class PaytmConstants{
 	 CONST PAYTM_PAYMENT_FAILED                 = "Payment Failed";
 	 CONST PAYTM_PAYMENT_PENDING                = "Payment Pending";
 
+	 CONST PAYTM_BUTTON_CONFIRM                 = "Confirm Order";
+
 	 // Paytm texts
 	 CONST TEXT_RESPONSE_ERROR       			= "Something went wrong. Please try again";
 	 CONST TEXT_RESPONSE_SUCCESS             	= "Updated <b>STATUS</b> has been fetched";
@@ -45,6 +52,8 @@ class PaytmConstants{
      CONST ERROR_CHECKSUM_MISMATCH				= "Security Error. Checksum Mismatched!";
      CONST ERROR_AMOUNT_MISMATCH				= "Security Error. Amount Mismatched!";
      CONST ERROR_INVALID_ORDER				    = "No order found to process. Kindly contact with us.";
+     CONST ERROR_SOMETHING_WENT_WRONG		    = "Something went wrong!";
+     CONST TOKEN_GENERATED_SUCCESSFULLY			= "Token generated successfully!";
 
 }
 

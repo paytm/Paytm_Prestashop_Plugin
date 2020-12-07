@@ -9,10 +9,8 @@
 {else}
 
 <h3>{l s='You have chosen to pay with Paytm' mod='Paytm'}</h3>
-<form name="checkout_confirmation" action="{$action}" method="post" />
-	{foreach from=$paytm_post key=k item=v}
-		<input type="hidden" name="{$k}" value="{$v}" />
-	{/foreach}
+
+
     <p>
 		{l s='Here is a short summary of your order:' mod='paytm'}
 	</p>
@@ -24,13 +22,57 @@
 			{/if}
 	</p>
 	<p>
-        {l s='You will be redirected to Paytm to complete your payment.' mod='paytm'}
-        <br /><br />
+       
         <b>{l s='Please confirm your order by clicking \'I confirm my order\'' mod='paytm'}.</b>
     </p>
-	<p class="cart_navigation">
-        <input type="submit" name="submit" value="{l s='I confirm my order' mod='checkout'}" class="exclusive_large" />
+	<p class="cart_navigation" id="car_paytm_nav">
+       
+		<a href="javascript:void(0);" onclick="invokeBlinkCheckoutPopup('{$txn_token}','{$ORDER_ID}','{$total}')" class="exclusive_large">{l s='I confirm my order' mod='checkout'}</a> 
         <a href="{$link->getPageLink('order', true, NULL, "step=3")}" class="button_large">{l s='Other payment methods' mod='paytm'}</a>
  	</p>
- </form>
+
+
 {/if}
+<script type="application/javascript" crossorigin="anonymous" src="{$checkout_url}"></script>
+		<script type="text/javascript">
+			function invokeBlinkCheckoutPopup(txnToken, orderId, amount){
+
+				 if(document.getElementById("paytmError")!==null){ 
+                  document.getElementById("paytmError").remove(); 
+                }
+				if(txnToken){
+				var config = {
+				"root": "",
+				"flow": "DEFAULT",
+				"data": {
+						"orderId": orderId,
+						"token": txnToken,
+						"tokenType": "TXN_TOKEN",
+						"amount": amount,
+				},
+				"handler": {
+					"notifyMerchant": function(eventName,data){
+						if(eventName == 'SESSION_EXPIRED'){
+							location.reload(); 
+						}
+					} 
+				}
+				};
+			
+				if(window.Paytm && window.Paytm.CheckoutJS){
+						// initialze configuration using init method 
+						window.Paytm.CheckoutJS.init(config).then(function onSuccess() {
+						// after successfully update configuration invoke checkoutjs
+						window.Paytm.CheckoutJS.invoke();
+						}).catch(function onError(error){
+							//console.log("error => ",error);
+						});
+				} 
+
+
+				}else{
+				jQuery("#car_paytm_nav").append("<div id='paytmError' style='color:red !important;' >{$messsage}</div>");
+
+				}
+			}
+		</script>  

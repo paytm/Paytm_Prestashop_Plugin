@@ -1,7 +1,9 @@
 <?php
 require_once(dirname(__FILE__).'/../../lib/PaytmHelper.php');
 require_once(dirname(__FILE__).'/../../lib/PaytmChecksum.php');
-
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 class PaytmResponseModuleFrontController extends ModuleFrontController {
 	
 	public function postProcess() {
@@ -45,7 +47,7 @@ class PaytmResponseModuleFrontController extends ModuleFrontController {
              	/* number of retries untill cURL gets success */
 				$retry = 1;
 				do{
-					$resParams = PaytmHelper::executecUrl(PaytmHelper::getTransactionStatusURL(Configuration::get('Paytm_ENVIRONMENT')), $reqParams);
+					$resParams = PaytmHelper::executecUrl(PaytmHelper::getPaytmURL(PaytmConstants::ORDER_STATUS_URL,Configuration::get('Paytm_ENVIRONMENT')), $reqParams);
 					$retry++;
 				} while(!$resParams['STATUS'] && $retry < PaytmConstants::MAX_RETRY_COUNT);
 			
@@ -102,10 +104,17 @@ class PaytmResponseModuleFrontController extends ModuleFrontController {
 					}
 		        }
 			    else {
+					 if ($res_code == "141") {
+						$responseMsg = "Transaction Cancelled. ";
+						$message = "Transaction Cancelled";
+						$status = "6";
+					}
+					else {
 					$status_code   = "Failed";
 					$responseMsg   = PaytmConstants::TEXT_FAILURE;
 					$message       = $responseMsg1;
 					$status        = Configuration::get('Paytm_ID_ORDER_FAILED');
+					}
 			   }
 		    }
 			else {

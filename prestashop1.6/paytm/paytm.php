@@ -117,7 +117,7 @@ class Paytm extends PaymentModule {
 				$this->_postErrors[] = $this->l("Please Select Environment.");
 			}
 			if (!sizeof($this->_postErrors)) {
-				if(!PaytmHelper::validateCurl(PaytmHelper::getTransactionStatusURL($_POST["paytm_environment"]))){
+				if(!PaytmHelper::validateCurl(PaytmHelper::getPaytmURL(PaytmConstants::ORDER_STATUS_URL,Configuration::get('Paytm_ENVIRONMENT')))){
 					$this->displayCurlerror();
 				}else{
 					Configuration::updateValue("Paytm_MERCHANT_ID", $_POST["merchant_id"]);
@@ -192,6 +192,21 @@ class Paytm extends PaymentModule {
 	  <hr/>';
 
 		$this->bootstrap = true;
+		// $wait_msg='jQuery("body").block({
+		// 	message: "'.__(PaytmConstants::POPUP_LOADER_TEXT).'",
+		// 		overlayCSS: {
+		// 			background: "#fff",
+		// 			opacity: 0.6
+		// 		}, css: {
+		// 			padding: 20,
+		// 			textAlign: "center",
+		// 			color: "#555",
+		// 			border: "3px solid #aaa",
+		// 			backgroundColor: "#fff",
+		// 			cursor: "wait",
+		// 			lineHeight: "32px"
+		// 		}
+		// 	});';
 		$this->_html .= '
 			<form id="module_form" class="defaultForm form-horizontal" method="POST" novalidate="">
 				<div class="panel">
@@ -232,14 +247,14 @@ class Paytm extends PaymentModule {
 						</div>
 					</div>
 					<div class="panel-footer">
-						<button type="submit" value="1" id="module_form_submit_btn" name="submitPaytm" class="btn btn-default pull-right">
-							<i class="process-icon-save"></i> Save
-						</button>
-					</div>
-				</div>
-			</form>
-			'.$footer_text.'
-		';
+					<button type="submit" value="1" id="module_form_submit_btn" name="submitPaytm" class="btn btn-default pull-right">
+					<i class="process-icon-save"></i> Save
+				</button>
+			</div>
+		</div>
+	</form>
+	'.$footer_text.'
+   ';
 	}
 
 	public function getfieldvalues($data){
@@ -300,27 +315,30 @@ class Paytm extends PaymentModule {
 			$cust_id = "CUST_".$order_id;
 		}
 
-		$amount         = $cart->getOrderTotal(true, Cart::BOTH);
-		$parameters = array(
-			"MID"              => Configuration::get("Paytm_MERCHANT_ID"),
-			"ORDER_ID"         => $order_id,
-			"CUST_ID"          => $cust_id,
-			"TXN_AMOUNT"       => $amount,
-			"CHANNEL_ID"       => PaytmConstants::CHANNEL_ID,
-			"INDUSTRY_TYPE_ID" => Configuration::get("Paytm_MERCHANT_INDUSTRY_TYPE"),
-			"WEBSITE"          => Configuration::get("Paytm_MERCHANT_WEBSITE"),
-			"CALLBACK_URL"     => $this->getDefaultCallbackUrl(),
-			"MOBILE_NO" 	   => $mobile_no,
-			"EMAIL" 		   => $email,
-		);
-
-		$parameters["CHECKSUMHASH"] = PaytmChecksum::generateSignature($parameters, Configuration::get("Paytm_MERCHANT_KEY"));
 				
-		$parameters["X-REQUEST-ID"] =  PaytmConstants::X_REQUEST_ID._PS_VERSION_;
+		$amount         = $cart->getOrderTotal(true, Cart::BOTH);
+
+		$paramData = array('amount' => $amount, 'order_id' => $order_id, 'cust_id' => $cust_id, 'email' => $email, 'mobile_no' => $mobile_no);
+		$checkout_url          = str_replace('MID',Configuration::get("Paytm_MERCHANT_ID"), PaytmHelper::getPaytmURL(PaytmConstants::CHECKOUT_JS_URL, Configuration::get('Paytm_ENVIRONMENT')));
+		$data                  = $this->blinkCheckoutSend($paramData);
+		
+
+		if(!empty($data['txnToken'])){
+			$txn_token             = $data['txnToken'];
+			$paytm_message         = PaytmConstants::TOKEN_GENERATED_SUCCESS;
+		}else{
+			$txn_token             = '';
+			$paytm_message         =  PaytmConstants::TEXT_RESPONSE_ERROR;
+
+		}
 
 		$smarty->assign(array(
-							"paytm_post" 	=> $parameters,
-							"action" 		=> PaytmHelper::getTransactionURL(Configuration::get('Paytm_ENVIRONMENT'))));
+							"paytm_post" 	=> $paramData,
+							"ORDER_ID"      => $order_id,
+							"checkout_url"  => $checkout_url,
+							"txn_token"     => $txn_token,
+							"messsage"		=> $paytm_message,
+			                "CUST_ID"       => $cust_id));
 
 		return $this->display(__FILE__, "payment_execution.tpl");
 
@@ -415,7 +433,7 @@ class Paytm extends PaymentModule {
 			/* number of retries untill cURL gets success */	
 		 		$retry = 1;
 		 		do{
-					$resParams=PaytmHelper::executecUrl(PaytmHelper::getTransactionStatusURL(Configuration::get('Paytm_ENVIRONMENT')), $reqParams);
+					$resParams=PaytmHelper::executecUrl(PaytmHelper::getPaytmURL(PaytmConstants::ORDER_STATUS_URL,Configuration::get('Paytm_ENVIRONMENT')), $reqParams);
 		 			$retry++;
 		 		   }while(!$resParams['STATUS'] && $retry < PaytmConstants::MAX_RETRY_COUNT);
 
@@ -460,6 +478,94 @@ class Paytm extends PaymentModule {
 		}		
 		return false;
 	}
-}
+	private function blinkCheckoutSend($paramData = array()){
+		$apiURL = PaytmHelper::getPaytmURL(PaytmConstants::INITIATE_TRANSACTION_URL, Configuration::get('Paytm_ENVIRONMENT')) . '?mid='.Configuration::get('Paytm_MERCHANT_ID').'&orderId='.$paramData['order_id'];
+	   $paytmParams = array();
 
+	   $paytmParams["body"] = array(
+		   "requestType"   => "Payment",
+		   "mid"           => Configuration::get('Paytm_MERCHANT_ID'),
+		   "websiteName"   => Configuration::get("Paytm_MERCHANT_WEBSITE"),
+		   "orderId"       => $paramData['order_id'],
+		   "callbackUrl"   => $this->getDefaultCallbackUrl(),
+		   "txnAmount"     => array(
+			   "value"     => strval($paramData['amount']),
+			   "currency"  => "INR",
+		   ),
+		   "userInfo"      => array(
+			   "custId"    => $paramData['cust_id'],
+		   ),
+	   );
+
+	   /*
+	   * Generate checksum by parameters we have in body
+	   * Find your Merchant Key in your Paytm Dashboard at https://dashboard.paytm.com/next/apikeys 
+	   */
+	   $checksum = PaytmChecksum::generateSignature(json_encode($paytmParams["body"], JSON_UNESCAPED_SLASHES), Configuration::get("Paytm_MERCHANT_KEY"));
+
+	   $paytmParams["head"] = array(
+		   "signature"	=> $checksum
+	   );
+	   //print_r($paytmParams);
+
+	   $response = PaytmHelper::executecUrl($apiURL, $paytmParams);
+	   $data = array('orderId' => $paramData['order_id'], 'amount' => $paramData['amount']);
+	   if(!empty($response['body']['txnToken'])){
+		   $data['txnToken'] = $response['body']['txnToken'];
+	   }else{
+		   $data['txnToken'] = '';
+	   }
+	   $data['apiurl'] = $apiURL;
+	   return $data;
+   }
+	/* 
+	* Get the transaction token
+	*/
+	public function getTxnToken($order_id,$amount,$customer_id)
+	{
+		$txntoken="";
+		if(!empty($amount) && (int)$amount > 0)
+		{
+			/* body parameters */
+			$paytmParams["body"] = array(
+				"requestType" => "Payment",
+				"mid" => Configuration::get('Paytm_MERCHANT_ID'),
+				"websiteName" => Configuration::get("Paytm_MERCHANT_WEBSITE"),
+				"orderId" => $order_id,
+				"callbackUrl" => $this->getDefaultCallbackUrl(),
+				"txnAmount" => array(
+					"value" => $amount,
+					"currency" => "INR",
+				),
+				"userInfo" => array(
+					"custId" => $customer_id,
+				),
+			);
+			
+			$checksum = PaytmChecksum::generateSignature(json_encode($paytmParams["body"], JSON_UNESCAPED_SLASHES), Configuration::get("Paytm_MERCHANT_KEY")); 
+			
+			$paytmParams["head"] = array(
+				"signature"	=> $checksum
+			);
+			
+			/* prepare JSON string for request */
+			$post_data = json_encode($paytmParams, JSON_UNESCAPED_SLASHES);
+			$url = trim(PaytmHelper::getInitiateURL(Configuration::get('Paytm_ENVIRONMENT')))."/theia/api/v1/initiateTransaction?mid=".$paytmParams["body"]['mid']."&orderId=".$paytmParams["body"]['orderId'];
+			
+			$ch = curl_init($url);
+			curl_setopt($ch, CURLOPT_POST, 1);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
+			curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/json")); 
+			$response = curl_exec($ch);
+			$res = json_decode($response,true);  
+			if(!empty($res['body']['resultInfo']['resultStatus']) && $res['body']['resultInfo']['resultStatus'] == 'S'){
+				$txntoken = $res['body']['txnToken'];
+			}
+			//$txntoken = $post_data.json_encode($res);
+		}
+		return $txntoken;
+	}
+}
+	
 ?>

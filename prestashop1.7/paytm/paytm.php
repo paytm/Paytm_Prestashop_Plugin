@@ -125,7 +125,7 @@ class paytm extends PaymentModule
 			}
 
 			if (!sizeof($this->_postErrors)) {
-				if(!PaytmHelper::validateCurl(PaytmHelper::getTransactionStatusURL($_POST["paytm_environment"]))){
+				if(!PaytmHelper::validateCurl(PaytmHelper::getPaytmURL(PaytmConstants::ORDER_STATUS_URL,Configuration::get('Paytm_ENVIRONMENT')))){
 					$this->displayCurlerror();
 				}else{
 				Configuration::updateValue("Paytm_MERCHANT_ID", $_POST["merchant_id"]);
@@ -293,7 +293,7 @@ class paytm extends PaymentModule
 		}
 		$btn = '';
 		$btn = '<section class="js-payment-binary js-payment-paytm disabled">';
-		$btn .= '<button type="button" onclick="document.getElementById(\'paytm_form_redirect\').submit();" class="btn btn-primary center-block">Pay with Paytm</button>';
+		$btn .= '<button type="button" id="button-confirm" onclick="invokeBlinkCheckoutPopup();" class="btn btn-primary center-block">'. PaytmConstants::PAYTM_BUTTON_CONFIRM .'</button> ';
 		$btn .= '</section>';
 		return $btn;
 	}
@@ -345,29 +345,57 @@ class paytm extends PaymentModule
 
 		$amount         = $cart->getOrderTotal(true, Cart::BOTH);
 
-		$parameters = array(
-			"MID"              => Configuration::get("Paytm_MERCHANT_ID"),
-			"ORDER_ID"         => $order_id,
-			"CUST_ID"          => $cust_id,
-			"TXN_AMOUNT"       => $amount,
-			"CHANNEL_ID"       => PaytmConstants::CHANNEL_ID,
-			"CALLBACK_URL"     => $this->getDefaultCallbackUrl(),
-			"INDUSTRY_TYPE_ID" => Configuration::get("Paytm_MERCHANT_INDUSTRY_TYPE"),
-			"WEBSITE"          => Configuration::get("Paytm_MERCHANT_WEBSITE"),
-			"MOBILE_NO" 	   => $mobile_no,
-			"EMAIL" 		   => $email,
-		);
-
-		$parameters["CHECKSUMHASH"] = PaytmChecksum::generateSignature($parameters, Configuration::get("Paytm_MERCHANT_KEY"));	
-
-		$parameters["X-REQUEST-ID"] 	= PaytmConstants::X_REQUEST_ID._PS_VERSION_;
-		            
-		$smarty->assign(array(
-							"paytm_post"      => $parameters,
-							"action"          => PaytmHelper::getTransactionURL(Configuration::get("Paytm_ENVIRONMENT")),
-							"base_url"        => Tools::getHttpHost(true).__PS_BASE_URI__,));
+		$paramData = array('amount' => $amount, 'order_id' => $order_id, 'cust_id' => $cust_id, 'email' => $email, 'mobile_no' => $mobile_no);
+		$checkout_url          = str_replace('MID',Configuration::get("Paytm_MERCHANT_ID"), PaytmHelper::getPaytmURL(PaytmConstants::CHECKOUT_JS_URL, Configuration::get('Paytm_ENVIRONMENT')));
+		$data                  = $this->blinkCheckoutSend($paramData);
+		$txn_token             = $data['txnToken'];
+		$mesage_txt            = $data['message'];
 		
-		return $this->display(__FILE__, 'payment_form.tpl');
+		?>
+		<script type="application/javascript" crossorigin="anonymous" src="<?php echo $checkout_url;?>"></script>
+		<script type="text/javascript">
+			function invokeBlinkCheckoutPopup(){
+			  if(document.getElementById("paytmError")!==null){ 
+                  document.getElementById("paytmError").remove(); 
+                }
+			  var txnToken =  "<?php echo $txn_token?>";
+			  if(txnToken){
+				var config = {
+				"root": "",
+				"flow": "DEFAULT",
+				"data": {
+						"orderId": "<?php echo $order_id;?>",
+						"token": "<?php echo $txn_token?>",
+						"tokenType": "TXN_TOKEN",
+						"amount": "<?php echo $amount?>",
+				},
+				"handler": {
+					"notifyMerchant": function(eventName,data){
+						if(eventName == 'SESSION_EXPIRED'){
+								location.reload(); 
+						}
+					} 
+				}
+				};
+			
+				if(window.Paytm && window.Paytm.CheckoutJS){
+						// initialze configuration using init method 
+						window.Paytm.CheckoutJS.init(config).then(function onSuccess() {
+						// after successfully update configuration invoke checkoutjs
+						window.Paytm.CheckoutJS.invoke();
+						}).catch(function onError(error){
+							//console.log("error => ",error);
+						});
+				} 
+			}else{
+				$("#button-confirm").after('<span style="color:red;padding-left:5px;" id="paytmError"></span>');
+				$('#paytmError').text('<?php  echo $mesage_txt; ?>');
+			}
+			}
+		</script>  
+		<?php
+		
+	//	return $this->display(__FILE__, 'payment_form.tpl');
 	}
 	/**
 	* create paytm_order_data table.
@@ -440,7 +468,7 @@ class paytm extends PaymentModule
 				
 		 		$retry = 1;
 		 		do{
-			       $resParams=PaytmHelper::executecUrl(PaytmHelper::getTransactionStatusURL(Configuration::get('Paytm_ENVIRONMENT')), $reqParams);
+			       $resParams=PaytmHelper::executecUrl(PaytmHelper::getPaytmURL(PaytmConstants::ORDER_STATUS_URL,Configuration::get('Paytm_ENVIRONMENT')), $reqParams);
 		 			$retry++;
 		 		  } while(!$resParams['STATUS'] && $retry < PaytmConstants::MAX_RETRY_COUNT);
 
@@ -486,5 +514,47 @@ class paytm extends PaymentModule
 		}		
 		return false;
 	}
+	private function blinkCheckoutSend($paramData = array()){
+		 $apiURL = PaytmHelper::getPaytmURL(PaytmConstants::INITIATE_TRANSACTION_URL, Configuration::get('Paytm_ENVIRONMENT')) . '?mid='.Configuration::get('Paytm_MERCHANT_ID').'&orderId='.$paramData['order_id'];
+		$paytmParams = array();
+
+		$paytmParams["body"] = array(
+			"requestType"   => "Payment",
+			"mid"           => Configuration::get('Paytm_MERCHANT_ID'),
+			"websiteName"   => Configuration::get("Paytm_MERCHANT_WEBSITE"),
+			"orderId"       => $paramData['order_id'],
+			"callbackUrl"   => $this->getDefaultCallbackUrl(),
+			"txnAmount"     => array(
+				"value"     => strval($paramData['amount']),
+				"currency"  => "INR",
+			),
+			"userInfo"      => array(
+				"custId"    => $paramData['cust_id'],
+			),
+		);
+
+		/*
+		* Generate checksum by parameters we have in body
+		* Find your Merchant Key in your Paytm Dashboard at https://dashboard.paytm.com/next/apikeys 
+		*/
+		$checksum = PaytmChecksum::generateSignature(json_encode($paytmParams["body"], JSON_UNESCAPED_SLASHES), Configuration::get("Paytm_MERCHANT_KEY"));
+
+		$paytmParams["head"] = array(
+			"signature"	=> $checksum
+		);
+		$response = PaytmHelper::executecUrl($apiURL, $paytmParams);
+		$data = array('orderId' => $paramData['order_id'], 'amount' => $paramData['amount']);
+		if(!empty($response['body']['txnToken'])){
+			$data['txnToken'] = $response['body']['txnToken'];
+			$data['message'] = PaytmConstants::TOKEN_GENERATED_SUCCESSFULLY;
+		}else{
+			$data['txnToken'] = '';
+			$data['message'] = PaytmConstants::ERROR_SOMETHING_WENT_WRONG;
+		}
+		$data['apiurl'] = $apiURL;
+		return $data;
+	}
 }
+
+
 ?>

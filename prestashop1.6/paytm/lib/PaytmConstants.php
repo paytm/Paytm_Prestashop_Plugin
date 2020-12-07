@@ -1,15 +1,21 @@
 <?php
 
 class PaytmConstants{
-	 CONST TRANSACTION_URL_PRODUCTION			= "https://securegw.paytm.in/order/process";
-	 CONST TRANSACTION_STATUS_URL_PRODUCTION	= "https://securegw.paytm.in/order/status";
+	CONST TRANSACTION_STATUS_URL_PRODUCTION	= "https://securegw.paytm.in/order/status";
+	CONST TRANSACTION_STATUS_URL_STAGING		= "https://securegw-stage.paytm.in/order/status";
 
-	 CONST TRANSACTION_URL_STAGING				= "https://securegw-stage.paytm.in/order/process";
-	 CONST TRANSACTION_STATUS_URL_STAGING		= "https://securegw-stage.paytm.in/order/status";
+	CONST PRODUCTION_HOST						= "https://securegw.paytm.in/";
+	CONST STAGING_HOST							= "https://securegw-stage.paytm.in/";
+
+	CONST ORDER_PROCESS_URL						= "order/process";
+	CONST ORDER_STATUS_URL						= "order/status";
+	CONST INITIATE_TRANSACTION_URL				= "theia/api/v1/initiateTransaction";
+	CONST CHECKOUT_JS_URL						= "merchantpgpui/checkoutjs/merchants/MID.js";
+ 
 
 	 CONST SAVE_PAYTM_RESPONSE 					= true;
 	 CONST CHANNEL_ID							= "WEB";
-	 CONST APPEND_TIMESTAMP						= false;
+	 CONST APPEND_TIMESTAMP						= true;
 	 CONST ONLY_SUPPORT_INR                     = true;
 	 CONST X_REQUEST_ID							= "PLUGIN_PRESTASHOP_";
 
@@ -37,6 +43,7 @@ class PaytmConstants{
 	 CONST TEXT_RESPONSE_SUCCESS             	= "Updated <b>STATUS</b> has been fetched";
 	 CONST TEXT_RESPONSE_STATUS_SUCCESS			= " and Transaction Status has been updated from <b>PENDING</b> to <b>%s</b>";
 	 CONST ERROR_CURL_WARNING           		= "Your server is unable to connect with us. Please contact to Paytm Support.";
+	 CONST TOKEN_GENERATED_SUCCESS				= "Token generated successfully";
 
 	 CONST TEXT_FAILURE       					= "Your payment has been failed!";
 	 CONST TEXT_PENDING                         = 'Your payment has been pending!';

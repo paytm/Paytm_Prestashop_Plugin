@@ -1,7 +1,6 @@
 <?php
 require_once(dirname(__FILE__).'/../../lib/PaytmHelper.php');
 require_once(dirname(__FILE__).'/../../lib/PaytmChecksum.php');
-
 class PaytmValidationModuleFrontController extends ModuleFrontController
 {
 	public $warning = '';
@@ -70,7 +69,7 @@ class PaytmValidationModuleFrontController extends ModuleFrontController
 				/* number of retries untill cURL gets success */
 				$retry = 1;
 				do{
-					$resParams = PaytmHelper::executecUrl(PaytmHelper::getTransactionStatusURL(Configuration::get('Paytm_ENVIRONMENT')), $reqParams);
+					$resParams = PaytmHelper::executecUrl(PaytmHelper::getPaytmURL(PaytmConstants::ORDER_STATUS_URL,Configuration::get('Paytm_ENVIRONMENT')), $reqParams);
 					$retry++;
 				} while(!$resParams['STATUS'] && $retry < PaytmConstants::MAX_RETRY_COUNT);
 					/* save paytm response in db */
