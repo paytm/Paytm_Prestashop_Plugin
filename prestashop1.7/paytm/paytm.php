@@ -311,10 +311,12 @@ class paytm extends PaymentModule
 		    }
 	    }
 		$newOption = new PaymentOption();
-		$newOption->setCallToActionText($this->l('Pay by Paytm'));
+		$newOption->setCallToActionText($this->l(''));
 		$newOption->setForm($this->generateForm());
 		$newOption->setBinary(true);
 		$newOption->setModuleName('paytm');
+		$newOption->setLogo('../modules/paytm/paytm_logo.png');
+		$newOption->setAdditionalInformation('<p>Pay using Credit/Debit Card, NetBanking, Wallet, Postpaid or UPI</p>');
 		return [$newOption];
 	}
 	// frontend Paytm Form
@@ -369,6 +371,10 @@ class paytm extends PaymentModule
 						"tokenType": "TXN_TOKEN",
 						"amount": "<?php echo $amount?>",
 				},
+				"integration": {
+                            "platform": "Prestashop",
+                            "version": "<?php echo _PS_VERSION_.'|'.$this->version; ?>"  
+                },
 				"handler": {
 					"notifyMerchant": function(eventName,data){
 						if(eventName == 'SESSION_EXPIRED'){
