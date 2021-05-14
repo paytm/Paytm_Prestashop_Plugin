@@ -517,11 +517,6 @@ class Paytm extends PaymentModule {
 		   $data['txnToken'] = '';
 	   }
 	   $data['apiurl'] = $apiURL;
-
-
-
-
-	   //print_r($data);  exit;
 	   return $data;
    }
 	/* 
