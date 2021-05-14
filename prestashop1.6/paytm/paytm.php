@@ -337,6 +337,7 @@ class Paytm extends PaymentModule {
 							"ORDER_ID"      => $order_id,
 							"checkout_url"  => $checkout_url,
 							"txn_token"     => $txn_token,
+							"versions"      => $data['versions'],
 							"messsage"		=> $paytm_message,
 			                "CUST_ID"       => $cust_id));
 
@@ -509,13 +510,18 @@ class Paytm extends PaymentModule {
 	   //print_r($paytmParams);
 
 	   $response = PaytmHelper::executecUrl($apiURL, $paytmParams);
-	   $data = array('orderId' => $paramData['order_id'], 'amount' => $paramData['amount']);
+	   $data = array('orderId' => $paramData['order_id'], 'amount' => $paramData['amount'],'versions'=>_PS_VERSION_.'|'.$this->version);
 	   if(!empty($response['body']['txnToken'])){
 		   $data['txnToken'] = $response['body']['txnToken'];
 	   }else{
 		   $data['txnToken'] = '';
 	   }
 	   $data['apiurl'] = $apiURL;
+
+
+
+
+	   //print_r($data);  exit;
 	   return $data;
    }
 	/* 

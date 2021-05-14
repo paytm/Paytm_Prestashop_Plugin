@@ -27,7 +27,7 @@
     </p>
 	<p class="cart_navigation" id="car_paytm_nav">
        
-		<a href="javascript:void(0);" onclick="invokeBlinkCheckoutPopup('{$txn_token}','{$ORDER_ID}','{$total}')" class="exclusive_large">{l s='I confirm my order' mod='checkout'}</a> 
+		<a href="javascript:void(0);" onclick="invokeBlinkCheckoutPopup('{$txn_token}','{$ORDER_ID}','{$total}','{$versions}')" class="exclusive_large">{l s='I confirm my order' mod='checkout'}</a> 
         <a href="{$link->getPageLink('order', true, NULL, "step=3")}" class="button_large">{l s='Other payment methods' mod='paytm'}</a>
  	</p>
 
@@ -35,7 +35,7 @@
 {/if}
 <script type="application/javascript" crossorigin="anonymous" src="{$checkout_url}"></script>
 		<script type="text/javascript">
-			function invokeBlinkCheckoutPopup(txnToken, orderId, amount){
+			function invokeBlinkCheckoutPopup(txnToken, orderId, amount,versions){
 
 				 if(document.getElementById("paytmError")!==null){ 
                   document.getElementById("paytmError").remove(); 
@@ -50,6 +50,10 @@
 						"tokenType": "TXN_TOKEN",
 						"amount": amount,
 				},
+				"integration": {
+                                 "platform": "Prestashop",
+                                 "version": versions  
+                               },
 				"handler": {
 					"notifyMerchant": function(eventName,data){
 						if(eventName == 'SESSION_EXPIRED'){

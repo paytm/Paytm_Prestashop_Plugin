@@ -1,7 +1,7 @@
 <?php
 
 class PaytmConstants{
-	CONST TRANSACTION_STATUS_URL_PRODUCTION	= "https://securegw.paytm.in/order/status";
+	CONST TRANSACTION_STATUS_URL_PRODUCTION	    = "https://securegw.paytm.in/order/status";
 	CONST TRANSACTION_STATUS_URL_STAGING		= "https://securegw-stage.paytm.in/order/status";
 
 	CONST PRODUCTION_HOST						= "https://securegw.paytm.in/";
@@ -23,8 +23,8 @@ class PaytmConstants{
 	 CONST CONNECT_TIMEOUT						= "10";
 	 CONST TIMEOUT								= "10";
 
-	 CONST LAST_UPDATED							= "20200120";
-	 CONST PLUGIN_VERSION						= "2.0";
+	 CONST LAST_UPDATED							= "20210514";
+	 CONST PLUGIN_VERSION						= "2.5";
 	 CONST PLUGIN_DOC_URL						= "https://developer.paytm.com/docs/eCommerce-plugin/prestashop/#v1-6-x";
 
 	 CONST CUSTOM_CALLBACK_URL					= "";
