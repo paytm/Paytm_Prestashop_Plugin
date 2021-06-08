@@ -293,7 +293,7 @@ class paytm extends PaymentModule
 		}
 		$btn = '';
 		$btn = '<section class="js-payment-binary js-payment-paytm disabled">';
-		$btn .= '<button type="button" id="button-confirm" onclick="invokeBlinkCheckoutPopup();" class="btn btn-primary center-block">'. PaytmConstants::PAYTM_BUTTON_CONFIRM .'</button> ';
+		$btn .= '<button type="button" id="button-confirm" onclick="initTransaction();" class="btn btn-primary center-block">'. PaytmConstants::PAYTM_BUTTON_CONFIRM .'</button> ';
 		$btn .= '</section>';
 		return $btn;
 	}
@@ -321,6 +321,10 @@ class paytm extends PaymentModule
 	}
 	// frontend Paytm Form
 	private function generateForm(){
+
+
+
+
 
 		global $smarty, $cart;
 		$bill_address   = new Address(intval($cart->id_address_invoice));
@@ -350,24 +354,73 @@ class paytm extends PaymentModule
 		$paramData = array('amount' => $amount, 'order_id' => $order_id, 'cust_id' => $cust_id, 'email' => $email, 'mobile_no' => $mobile_no);
 		$checkout_url          = str_replace('MID',Configuration::get("Paytm_MERCHANT_ID"), PaytmHelper::getPaytmURL(PaytmConstants::CHECKOUT_JS_URL, Configuration::get('Paytm_ENVIRONMENT')));
 		$data                  = $this->blinkCheckoutSend($paramData);
+		$request  = json_encode($data['body']);
 		$txn_token             = $data['txnToken'];
 		$mesage_txt            = $data['message'];
 		
 		?>
+		<div id="paytm-pg-spinner" class="paytm-pg-loader">
+        <div class="bounce1"></div>
+        <div class="bounce2"></div>
+        <div class="bounce3"></div>
+        <div class="bounce4"></div>
+        <div class="bounce5"></div>
+        </div>
+        <div class="paytm-overlay paytm-pg-loader"></div>
+        <style type="text/css">
+        #paytm-pg-spinner {margin: 0% auto 0;width: 70px;text-align: center;z-index: 999999;position: relative;display: none;}
+
+        #paytm-pg-spinner > div {width: 10px;height: 10px;background-color: #012b71;border-radius: 100%;display: inline-block;-webkit-animation: sk-bouncedelay 1.4s infinite ease-in-out both;animation: sk-bouncedelay 1.4s infinite ease-in-out both;}
+
+        #paytm-pg-spinner .bounce1 {-webkit-animation-delay: -0.64s;animation-delay: -0.64s;}
+
+        #paytm-pg-spinner .bounce2 {-webkit-animation-delay: -0.48s;animation-delay: -0.48s;}
+        #paytm-pg-spinner .bounce3 {-webkit-animation-delay: -0.32s;animation-delay: -0.32s;}
+
+       #paytm-pg-spinner .bounce4 {-webkit-animation-delay: -0.16s;animation-delay: -0.16s;}
+       #paytm-pg-spinner .bounce4, #paytm-pg-spinner .bounce5{background-color: #48baf5;} 
+       @-webkit-keyframes sk-bouncedelay {0%, 80%, 100% { -webkit-transform: scale(0) }40% { -webkit-transform: scale(1.0) }}
+
+       @keyframes sk-bouncedelay { 0%, 80%, 100% { -webkit-transform: scale(0);transform: scale(0); } 40% { 
+       -webkit-transform: scale(1.0); transform: scale(1.0);}}
+      .paytm-overlay{width: 100%;position: fixed;top: 0px;opacity: .4;height: 100%;background: #000;z-index: 15000000;left: 0;display: none;}
+
+</style>
 		<script type="application/javascript" crossorigin="anonymous" src="<?php echo $checkout_url;?>"></script>
 		<script type="text/javascript">
-			function invokeBlinkCheckoutPopup(){
+
+			function initTransaction(){
+				$(".paytm-overlay").css("display","block");
+				$("#paytm-pg-spinner").css("display","block");
+				var settings = {
+                "url": "<?php echo $data['apiurl']; ?>",
+                "method": "POST",
+                "timeout": 0,
+                "headers": {
+                "Content-Type": "application/json"
+                },
+                "data": JSON.stringify(<?php echo $request; ?>),
+                };
+
+                $.ajax(settings).done(function (response) {
+                  invokeBlinkCheckoutPopup(response.body.txnToken);
+                });
+
+			}
+
+
+			function invokeBlinkCheckoutPopup(txnToken=''){
+
 			  if(document.getElementById("paytmError")!==null){ 
                   document.getElementById("paytmError").remove(); 
                 }
-			  var txnToken =  "<?php echo $txn_token?>";
 			  if(txnToken){
 				var config = {
 				"root": "",
 				"flow": "DEFAULT",
 				"data": {
 						"orderId": "<?php echo $order_id;?>",
-						"token": "<?php echo $txn_token?>",
+						"token": txnToken,
 						"tokenType": "TXN_TOKEN",
 						"amount": "<?php echo $amount?>",
 				},
@@ -388,12 +441,16 @@ class paytm extends PaymentModule
 						// initialze configuration using init method 
 						window.Paytm.CheckoutJS.init(config).then(function onSuccess() {
 						// after successfully update configuration invoke checkoutjs
-						window.Paytm.CheckoutJS.invoke();
+						  $(".paytm-overlay").css("display","none");
+			              $("#paytm-pg-spinner").css("display","none");
+						  window.Paytm.CheckoutJS.invoke();
 						}).catch(function onError(error){
 							//console.log("error => ",error);
 						});
 				} 
 			}else{
+				$(".paytm-overlay").css("display","none");
+			    $("#paytm-pg-spinner").css("display","none");
 				$("#button-confirm").after('<span style="color:red;padding-left:5px;" id="paytmError"></span>');
 				$('#paytmError').text('<?php  echo $mesage_txt; ?>');
 			}
@@ -548,15 +605,10 @@ class paytm extends PaymentModule
 		$paytmParams["head"] = array(
 			"signature"	=> $checksum
 		);
-		$response = PaytmHelper::executecUrl($apiURL, $paytmParams);
+
+		//$response = PaytmHelper::executecUrl($apiURL, $paytmParams);
 		$data = array('orderId' => $paramData['order_id'], 'amount' => $paramData['amount']);
-		if(!empty($response['body']['txnToken'])){
-			$data['txnToken'] = $response['body']['txnToken'];
-			$data['message'] = PaytmConstants::TOKEN_GENERATED_SUCCESSFULLY;
-		}else{
-			$data['txnToken'] = '';
-			$data['message'] = PaytmConstants::ERROR_SOMETHING_WENT_WRONG;
-		}
+		$data['body'] = $paytmParams;
 		$data['apiurl'] = $apiURL;
 		return $data;
 	}

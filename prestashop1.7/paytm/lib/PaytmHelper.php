@@ -80,7 +80,8 @@ class PaytmHelper{
 			'Content-Type: application/json', 
 			'Content-Length: ' . strlen($postData))
 		);
-		$jsonResponse = curl_exec($ch);   
+		$jsonResponse = curl_exec($ch); 
+		curl_close($ch);  
 
 		if (!curl_errno($ch)) {
 			return json_decode($jsonResponse, true);

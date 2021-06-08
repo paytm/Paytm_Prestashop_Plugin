@@ -2,7 +2,7 @@
 <module>
     <name>paytm</name>
     <displayName><![CDATA[Paytm]]></displayName>
-    <version><![CDATA[2.0]]></version>
+    <version><![CDATA[2.5]]></version>
     <description><![CDATA[Accept payments by Paytm]]></description>
     <author><![CDATA[Paytm Development Team]]></author>
     <tab><![CDATA[payments_gateways]]></tab>
