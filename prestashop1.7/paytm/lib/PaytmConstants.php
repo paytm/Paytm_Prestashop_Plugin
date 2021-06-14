@@ -22,8 +22,8 @@ class PaytmConstants{
 	 CONST CONNECT_TIMEOUT						= "10";
 	 CONST TIMEOUT								= "10";
 
-	 CONST LAST_UPDATED							= "20210608";
-	 CONST PLUGIN_VERSION						= "3.0";
+	 CONST LAST_UPDATED							= "20210614";
+	 CONST PLUGIN_VERSION						= "3.1";
 	 CONST PLUGIN_DOC_URL						= "https://developer.paytm.com/docs/eCommerce-plugin/prestashop/#v1-7-x";
 
 	 CONST CUSTOM_CALLBACK_URL					= "";
@@ -40,7 +40,7 @@ class PaytmConstants{
 	 CONST PAYTM_BUTTON_CONFIRM                 = "Confirm Order";
 
 	 // Paytm texts
-	 CONST TEXT_RESPONSE_ERROR       			= "Something went wrong. Please try again";
+	 CONST TEXT_RESPONSE_ERROR       			= "Oops! Trouble in initiating transaction. Please try again.";
 	 CONST TEXT_RESPONSE_SUCCESS             	= "Updated <b>STATUS</b> has been fetched";
 	 CONST TEXT_RESPONSE_STATUS_SUCCESS			= " and Transaction Status has been updated from <b>PENDING</b> to <b>%s</b>";
 	 CONST ERROR_CURL_WARNING           		= "Your server is unable to connect with us. Please contact to Paytm Support.";
@@ -52,7 +52,7 @@ class PaytmConstants{
      CONST ERROR_CHECKSUM_MISMATCH				= "Security Error. Checksum Mismatched!";
      CONST ERROR_AMOUNT_MISMATCH				= "Security Error. Amount Mismatched!";
      CONST ERROR_INVALID_ORDER				    = "No order found to process. Kindly contact with us.";
-     CONST ERROR_SOMETHING_WENT_WRONG		    = "Something went wrong!";
+     CONST ERROR_SOMETHING_WENT_WRONG		    = "Oops! Trouble in initiating transaction. Please try again.";
      CONST TOKEN_GENERATED_SUCCESSFULLY			= "Token generated successfully!";
 
 }
