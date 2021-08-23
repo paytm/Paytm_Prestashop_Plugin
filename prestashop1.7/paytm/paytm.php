@@ -362,6 +362,16 @@ class paytm extends PaymentModule
 		<script type="text/javascript">
 
 			function initTransaction(){
+				$('#paytmError').text("");
+				if($('input[name="conditions_to_approve[terms-and-conditions]"]').is(':checked'))
+				{
+				  //
+				}else
+				{
+				     $("#button-confirm").after('<span style="color:red;padding-left:5px;" id="paytmError"></span>');
+				     $('#paytmError').text("Please accept terms of service.");
+				     return false;
+				}
 				$(".paytm-overlay").css("display","block");
 				$("#paytm-pg-spinner").css("display","block");
                 var settings = {
