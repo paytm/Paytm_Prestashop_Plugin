@@ -133,7 +133,9 @@ class paytm extends PaymentModule
 				Configuration::updateValue("Paytm_ENVIRONMENT", $_POST["paytm_environment"]);
 				Configuration::updateValue("Paytm_MERCHANT_INDUSTRY_TYPE", $_POST["industry_type"]);
 				Configuration::updateValue("Paytm_MERCHANT_WEBSITE", $_POST["website"]);
-				
+				Configuration::updateValue("Paytm_EMI_SUBVENTION", $_POST["paytm_emisubvention"]);
+				Configuration::updateValue("Paytm_BANK_OFFER", $_POST["paytm_bankoffer"]);
+				Configuration::updateValue("Paytm_DC_EMI", $_POST["paytm_dcemi"]);
 				$this->saveConfmessage();
 				}
 			} else {
@@ -242,6 +244,33 @@ class paytm extends PaymentModule
 										</select>
 										</div>
 									</div>
+									<div class="form-group">
+										<label class="control-label col-lg-3"> '.$this->l("Enable EMI Subvention").'</label>
+										<div class="col-lg-9">
+										<select name="paytm_emisubvention" class="">
+										<option '.($field_value['paytm_emisubvention'] != "1"? "selected" : "").' value="0" >Disable</option>
+										<option '.($field_value['paytm_emisubvention'] == "1"? "selected" : "").' value="1">Enable</option>
+										</select>
+										</div>
+									</div>
+									<div class="form-group">
+										<label class="control-label col-lg-3"> '.$this->l("Enable Bank Offers").'</label>
+										<div class="col-lg-9">
+										<select name="paytm_bankoffer" class="">
+										<option '.($field_value['paytm_bankoffer'] != "1"? "selected" : "").' value="0" >Disable</option>
+										<option '.($field_value['paytm_bankoffer'] == "1"? "selected" : "").' value="1">Enable</option>
+										</select>
+										</div>
+									</div>
+									<div class="form-group">
+										<label class="control-label col-lg-3"> '.$this->l("Enable DC EMI").'</label>
+										<div class="col-lg-9">
+										<select name="paytm_dcemi" class="">
+										<option '.($field_value['paytm_dcemi'] != "1"? "selected" : "").' value="0" >Disable</option>
+										<option '.($field_value['paytm_dcemi'] == "1"? "selected" : "").' value="1">Enable</option>
+										</select>
+										</div>
+									</div>
 									<div class="row-fluid">
 									<button type="submit" value="1" id="module_form_submit_btn" name="submitPaytm" class="btn btn-primary pull-right">
 									<i class="process-icon-save"></i> Save
@@ -281,7 +310,9 @@ class paytm extends PaymentModule
 	    $field_data['industry_type']      = isset($data["industry_type"])?$data["industry_type"] : Configuration::get("Paytm_MERCHANT_INDUSTRY_TYPE");
 		$field_data['website']            = isset($data["website"])?$data["website"] : Configuration::get("Paytm_MERCHANT_WEBSITE");
 	    $field_data['paytm_environment']  = isset($data["paytm_environment"])? $data["paytm_environment"] : Configuration::get("Paytm_ENVIRONMENT");
-								
+	    $field_data['paytm_emisubvention']  = isset($data["paytm_emisubvention"])? $data["paytm_emisubvention"] : Configuration::get("Paytm_EMI_SUBVENTION");
+	    $field_data['paytm_bankoffer']  = isset($data["paytm_bankoffer"])? $data["paytm_bankoffer"] : Configuration::get("Paytm_BANK_OFFER");
+	    $field_data['paytm_dcemi']  = isset($data["paytm_dcemi"])? $data["paytm_dcemi"] : Configuration::get("Paytm_DC_EMI");						
 		return $field_data;
 								
 	}

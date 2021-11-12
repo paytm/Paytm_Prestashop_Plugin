@@ -41,9 +41,11 @@ class PaytmAjaxModuleFrontController extends ModuleFrontController
 			$cust_id = "CUST_".$order_id;
 		}
 		$amount         = $cart->getOrderTotal(true, Cart::BOTH);
-
-
-
+		if(empty($mobile_no)){
+			if(isset($bill_address->phone)){
+				$mobile_no = $bill_address->phone;
+			}
+		}
 
 		$paramData = array('amount' => $amount, 'order_id' => $order_id, 'cust_id' => $cust_id, 'email' => $email, 'mobile_no' => $mobile_no);
 
@@ -73,7 +75,21 @@ class PaytmAjaxModuleFrontController extends ModuleFrontController
 				"custId"    => $paramData['cust_id'],
 			),
 		);
-
+		// for bank offers
+        if(Configuration::get('Paytm_BANK_OFFER') ==1){
+            $paytmParams["body"]["simplifiedPaymentOffers"]["applyAvailablePromo"]= "true";
+        }
+        // for emi subvention
+        if(Configuration::get('Paytm_EMI_SUBVENTION') ==1){
+            $paytmParams["body"]["simplifiedSubvention"]["customerId"]= $paramData['cust_id'];
+            $paytmParams["body"]["simplifiedSubvention"]["subventionAmount"]= strval($paramData['amount']);
+            $paytmParams["body"]["simplifiedSubvention"]["selectPlanOnCashierPage"]= "true";
+            //$paytmParams["body"]["simplifiedSubvention"]["offerDetails"]["offerId"]= 1;
+        }
+        // for dc emi
+        if(Configuration::get('Paytm_DC_EMI') ==1){
+            $paytmParams["body"]["userInfo"]["mobile"]= $paramData['mobile_no'];
+        }
 		/*
 		* Generate checksum by parameters we have in body
 		* Find your Merchant Key in your Paytm Dashboard at https://dashboard.paytm.com/next/apikeys 
