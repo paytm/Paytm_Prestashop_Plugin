@@ -215,24 +215,28 @@ class paytm extends PaymentModule
 										<label class="control-label col-lg-3 required"> '.$this->l("Merchant ID").'</label>
 										<div class="col-lg-9">
 											<input type="text" name="merchant_id" value="' . $field_value['merchant_id'] . '"  class="" required="required"/>
+											<span>Based on the selected Environment Mode, copy the relevant Merchant ID for test or production environment available on <a href="https://dashboard.paytm.com/next/apikeys" target="_blank">Paytm dashboard</a>.</span>
 										</div>
 									</div>
 									<div class="form-group">
 										<label class="control-label col-lg-3 required"> '.$this->l("Merchant Key").'</label>
 										<div class="col-lg-9">
 											<input type="text" name="merchant_key" value="' . $field_value['merchant_key'] . '"  class="" required="required"/>
+											<span>Based on the selected Environment Mode, copy the Merchant Key for test or production environment available on <a href="https://dashboard.paytm.com/next/apikeys" target="_blank">Paytm dashboard</a>.</span>
 										</div>
 									</div>
 									<div class="form-group">
 										<label class="control-label col-lg-3 required"> '.$this->l("Website").'</label>
 										<div class="col-lg-9">
 											<input type="text" name="website" value="' . $field_value['website'] . '"  class="" required="required"/>
+											<span>Enter "WEBSTAGING" for test/integration environment & "DEFAULT" for production environment.</span>
 										</div>
 									</div>
 									<div class="form-group">
 										<label class="control-label col-lg-3 required"> '.$this->l("Industry Type").'</label>
 										<div class="col-lg-9">
 											<input type="text" name="industry_type" value="' . $field_value['industry_type'] . '"  class="" required="required"/>
+											<span>Login to <a href="https://dashboard.paytm.com/next/apikeys" target="_blank">Paytm dashboard</a> & copy paste the industry type available there.</span>
 										</div>
 									</div>		
 									<div class="form-group">
@@ -242,6 +246,7 @@ class paytm extends PaymentModule
 										<option '.($field_value['paytm_environment'] != "1"? "selected" : "").' value="0" >Staging</option>
 										<option '.($field_value['paytm_environment'] == "1"? "selected" : "").' value="1">Production</option>
 										</select>
+										<span>Select "Staging" for test/integration environment & "Production" once you move to production environment.</span>
 										</div>
 									</div>
 									<div class="form-group">
@@ -251,6 +256,7 @@ class paytm extends PaymentModule
 										<option '.($field_value['paytm_emisubvention'] != "1"? "selected" : "").' value="0" >Disable</option>
 										<option '.($field_value['paytm_emisubvention'] == "1"? "selected" : "").' value="1">Enable</option>
 										</select>
+										<span>Get your EMI Subvention plans configured at Paytm & then Select "Yes" to offer EMI Subvention to your customers.</span>
 										</div>
 									</div>
 									<div class="form-group">
@@ -260,6 +266,7 @@ class paytm extends PaymentModule
 										<option '.($field_value['paytm_bankoffer'] != "1"? "selected" : "").' value="0" >Disable</option>
 										<option '.($field_value['paytm_bankoffer'] == "1"? "selected" : "").' value="1">Enable</option>
 										</select>
+										<span>Get your Bank Offer plans configured at Paytm & then Select "Yes" to provide Bank Offer to your customers.</span>
 										</div>
 									</div>
 									<div class="form-group">
@@ -269,6 +276,7 @@ class paytm extends PaymentModule
 										<option '.($field_value['paytm_dcemi'] != "1"? "selected" : "").' value="0" >Disable</option>
 										<option '.($field_value['paytm_dcemi'] == "1"? "selected" : "").' value="1">Enable</option>
 										</select>
+										<span>Get DC EMI enabled for your MID and then select "Yes" to offer DC EMI to your customer. Customer mobile number is mandatory for DC EMI.</span>
 										</div>
 									</div>
 									<div class="row-fluid">
@@ -312,7 +320,8 @@ class paytm extends PaymentModule
 	    $field_data['paytm_environment']  = isset($data["paytm_environment"])? $data["paytm_environment"] : Configuration::get("Paytm_ENVIRONMENT");
 	    $field_data['paytm_emisubvention']  = isset($data["paytm_emisubvention"])? $data["paytm_emisubvention"] : Configuration::get("Paytm_EMI_SUBVENTION");
 	    $field_data['paytm_bankoffer']  = isset($data["paytm_bankoffer"])? $data["paytm_bankoffer"] : Configuration::get("Paytm_BANK_OFFER");
-	    $field_data['paytm_dcemi']  = isset($data["paytm_dcemi"])? $data["paytm_dcemi"] : Configuration::get("Paytm_DC_EMI");						
+	    $field_data['paytm_dcemi']  = isset($data["paytm_dcemi"])? $data["paytm_dcemi"] : Configuration::get("Paytm_DC_EMI");
+								
 		return $field_data;
 								
 	}
@@ -393,16 +402,6 @@ class paytm extends PaymentModule
 		<script type="text/javascript">
 
 			function initTransaction(){
-				$('#paytmError').text("");
-				if($('input[name="conditions_to_approve[terms-and-conditions]"]').is(':checked'))
-				{
-				  //
-				}else
-				{
-				     $("#button-confirm").after('<span style="color:red;padding-left:5px;" id="paytmError"></span>');
-				     $('#paytmError').text("Please accept terms of service.");
-				     return false;
-				}
 				$(".paytm-overlay").css("display","block");
 				$("#paytm-pg-spinner").css("display","block");
                 var settings = {
