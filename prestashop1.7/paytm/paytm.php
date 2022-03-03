@@ -404,6 +404,7 @@ class paytm extends PaymentModule
 			function initTransaction(){
 				$(".paytm-overlay").css("display","block");
 				$("#paytm-pg-spinner").css("display","block");
+				$('#paytmError').text('');
                 var settings = {
                 "url": "<?php echo $this->context->link->getModuleLink('paytm', 'ajax', array('paymode' => 'paytm', 'ajax'=>true)); ?>",
                 "method": "POST",
@@ -466,7 +467,7 @@ class paytm extends PaymentModule
 				$(".paytm-overlay").css("display","none");
 			    $("#paytm-pg-spinner").css("display","none");
 				$("#button-confirm").after('<span style="color:red;padding-left:5px;" id="paytmError"></span>');
-				$('#paytmError').text('<?php  echo $mesage_txt; ?>');
+				$('#paytmError').text('Something went wrong');
 			}
 			}
 		</script>  

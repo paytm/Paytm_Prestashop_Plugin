@@ -81,11 +81,13 @@ class PaytmHelper{
 			'Content-Length: ' . strlen($postData))
 		);
 		$jsonResponse = curl_exec($ch); 
-		curl_close($ch);  
+		  
 
 		if (!curl_errno($ch)) {
+			curl_close($ch);
 			return json_decode($jsonResponse, true);
 		} else {
+			curl_close($ch);
 			return false;
 		}
 	}
