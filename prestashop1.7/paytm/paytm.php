@@ -136,6 +136,7 @@ class paytm extends PaymentModule
 				Configuration::updateValue("Paytm_EMI_SUBVENTION", $_POST["paytm_emisubvention"]);
 				Configuration::updateValue("Paytm_BANK_OFFER", $_POST["paytm_bankoffer"]);
 				Configuration::updateValue("Paytm_DC_EMI", $_POST["paytm_dcemi"]);
+				Configuration::updateValue("Paytm_Logo", $_POST["paytm_logo"]);
 				$this->saveConfmessage();
 				}
 			} else {
@@ -174,8 +175,8 @@ class paytm extends PaymentModule
 
 	public function _displayPaytm(){
 		$this->_html .= '
-		<img src="../modules/paytm/logo.png" style="float:left; padding: 0px; margin-right:15px;" />
-		<b>'.$this->l('This module allows you to accept payments by Paytm.').'</b><br /><br />
+		<img src="https://raw.githubusercontent.com/paytm/Paytm_Magento_Plugin/master/paytm_logo_paymodes.svg" style="width:380px; float:left; margin:0px;" /><br/><br/><br/>
+		<b>'.$this->l('This module allows you to accept payments by Paytm.').'</b><br />
 		'.$this->l('If the client chooses this payment mode, your Paytm account will be automatically credited.').'<br />
 		'.$this->l('You need to configure your Paytm account first before using this module.').'
 		<br /><br /><br />';
@@ -279,6 +280,16 @@ class paytm extends PaymentModule
 										<span>Get DC EMI enabled for your MID and then select "Yes" to offer DC EMI to your customer. Customer mobile number is mandatory for DC EMI.</span>
 										</div>
 									</div>
+									<div class="form-group">
+										<label class="control-label col-lg-3"> '.$this->l("Enable Invert Logo").'</label>
+										<div class="col-lg-9">
+										<select name="paytm_logo" class="">
+										<option '.($field_value['paytm_logo'] != "1"? "selected" : "").' value="0" >Disable</option>
+										<option '.($field_value['paytm_logo'] == "1"? "selected" : "").' value="1">Enable</option>
+										</select>
+										<span>Enable paytm Invert logo for dark theme.</span>
+										</div>
+									</div>
 									<div class="row-fluid">
 									<button type="submit" value="1" id="module_form_submit_btn" name="submitPaytm" class="btn btn-primary pull-right">
 									<i class="process-icon-save"></i> Save
@@ -321,6 +332,7 @@ class paytm extends PaymentModule
 	    $field_data['paytm_emisubvention']  = isset($data["paytm_emisubvention"])? $data["paytm_emisubvention"] : Configuration::get("Paytm_EMI_SUBVENTION");
 	    $field_data['paytm_bankoffer']  = isset($data["paytm_bankoffer"])? $data["paytm_bankoffer"] : Configuration::get("Paytm_BANK_OFFER");
 	    $field_data['paytm_dcemi']  = isset($data["paytm_dcemi"])? $data["paytm_dcemi"] : Configuration::get("Paytm_DC_EMI");
+	    $field_data['paytm_logo']  = isset($data["paytm_logo"])? $data["paytm_logo"] : Configuration::get("Paytm_Logo");
 								
 		return $field_data;
 								
@@ -339,6 +351,8 @@ class paytm extends PaymentModule
 	}
 	public function hookPaymentOptions($params)
 	{ 
+		
+		$field_value    = $this->getfieldvalues($_POST);
 		if (!$this->active) {
 			return;
 		}
@@ -355,8 +369,17 @@ class paytm extends PaymentModule
 		$newOption->setForm($this->generateForm());
 		$newOption->setBinary(true);
 		$newOption->setModuleName('paytm');
-		$newOption->setLogo('../modules/paytm/paytm_logo.png');
-		$newOption->setAdditionalInformation('<p>Pay using Credit/Debit Card, NetBanking, Wallet, Postpaid or UPI</p>');
+		// code for paytm invert logo //
+		$paytm_colored_logo = PaytmConstants::PAYTM_COLORED_LOGO;
+		$paytm_invert_logo = PaytmConstants::PAYTM_INVERT_LOGO;	
+			if($field_value['paytm_logo']==1){
+				$newOption->setLogo($paytm_invert_logo);
+			}else {$newOption->setLogo($paytm_colored_logo);} 	
+		//$newOption->setLogo('https://raw.githubusercontent.com/paytm/Paytm_Magento_Plugin/master/paytm_logo_paymodes.svg');
+		//$newOption->setAdditionalInformation('<p>Pay using Credit/Debit Card, NetBanking, Wallet, Postpaid or UPI</p>');
+		echo '<style>
+		label[for=payment-option-3] img{ width:280px;}
+		</style>';
 		return [$newOption];
 	}
 	// frontend Paytm Form

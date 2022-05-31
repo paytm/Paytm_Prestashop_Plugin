@@ -23,7 +23,7 @@ class PaytmConstants{
 	 CONST TIMEOUT								= "10";
 
 	 CONST LAST_UPDATED							= "20211110";
-	 CONST PLUGIN_VERSION						= "3.3";
+	 CONST PLUGIN_VERSION						= "3.4";
 	 CONST PLUGIN_DOC_URL						= "https://developer.paytm.com/docs/eCommerce-plugin/prestashop/#v1-7-x";
 
 	 CONST CUSTOM_CALLBACK_URL					= "";
@@ -54,6 +54,9 @@ class PaytmConstants{
      CONST ERROR_INVALID_ORDER				    = "No order found to process. Kindly contact with us.";
      CONST ERROR_SOMETHING_WENT_WRONG		    = "Oops! Trouble in initiating transaction. Please try again.";
      CONST TOKEN_GENERATED_SUCCESSFULLY			= "Token generated successfully!";
+     CONST PAYTM_COLORED_LOGO					= "https://raw.githubusercontent.com/paytm/Paytm_Magento_Plugin/master/paytm_logo_paymodes.svg";
+     CONST PAYTM_INVERT_LOGO					= "https://raw.githubusercontent.com/paytm/Paytm_Magento_Plugin/master/paytm_logo_invert.svg";
+
 
 }
 
