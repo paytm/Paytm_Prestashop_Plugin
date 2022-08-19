@@ -22,7 +22,7 @@ class PaytmConstants{
 	 CONST CONNECT_TIMEOUT						= "10";
 	 CONST TIMEOUT								= "10";
 
-	 CONST LAST_UPDATED							= "20211110";
+	 CONST LAST_UPDATED							= "20220808";
 	 CONST PLUGIN_VERSION						= "3.4";
 	 CONST PLUGIN_DOC_URL						= "https://developer.paytm.com/docs/eCommerce-plugin/prestashop/#v1-7-x";
 
@@ -56,7 +56,6 @@ class PaytmConstants{
      CONST TOKEN_GENERATED_SUCCESSFULLY			= "Token generated successfully!";
      CONST PAYTM_COLORED_LOGO					= "https://raw.githubusercontent.com/paytm/Paytm_Magento_Plugin/master/paytm_logo_paymodes.svg";
      CONST PAYTM_INVERT_LOGO					= "https://raw.githubusercontent.com/paytm/Paytm_Magento_Plugin/master/paytm_logo_invert.svg";
-
 
 }
 

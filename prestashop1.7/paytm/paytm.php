@@ -46,7 +46,7 @@ class paytm extends PaymentModule
 			Configuration::updateValue("Paytm_MERCHANT_ID", "");
 			Configuration::updateValue("Paytm_MERCHANT_KEY", "");
 			Configuration::updateValue("Paytm_ENVIRONMENT", "");
-			Configuration::updateValue("Paytm_MERCHANT_INDUSTRY_TYPE", "");
+			//Configuration::updateValue("Paytm_MERCHANT_INDUSTRY_TYPE", "");
 			Configuration::updateValue("Paytm_MERCHANT_WEBSITE", "");			
 			
 			$this->registerHook('paymentOptions');
@@ -73,7 +73,7 @@ class paytm extends PaymentModule
 		if (!Configuration::deleteByName("Paytm_MERCHANT_ID") OR 
 			!Configuration::deleteByName("Paytm_MERCHANT_KEY") OR 
 			!Configuration::deleteByName("Paytm_ENVIRONMENT") OR 
-			!Configuration::deleteByName("Paytm_MERCHANT_INDUSTRY_TYPE") OR 
+			//!Configuration::deleteByName("Paytm_MERCHANT_INDUSTRY_TYPE") OR 
 			!Configuration::deleteByName("Paytm_MERCHANT_WEBSITE") OR  
 			!parent::uninstall()) {
 			return false;
@@ -114,9 +114,9 @@ class paytm extends PaymentModule
 				$this->_postErrors[] = $this->l("Please Enter your Merchant Key.");
 			}
 
-			if (!isset($_POST["industry_type"]) || $_POST["industry_type"] == ""){
+			/*if (!isset($_POST["industry_type"]) || $_POST["industry_type"] == ""){
 				$this->_postErrors[] = $this->l("Please Enter your Industry Type.");
-			}
+			}*/
 			if (!isset($_POST["website"]) || $_POST["website"] == ""){
 				$this->_postErrors[] = $this->l("Please Enter your Website.");
 			}
@@ -131,7 +131,7 @@ class paytm extends PaymentModule
 				Configuration::updateValue("Paytm_MERCHANT_ID", $_POST["merchant_id"]);
 				Configuration::updateValue("Paytm_MERCHANT_KEY", $_POST["merchant_key"]);
 				Configuration::updateValue("Paytm_ENVIRONMENT", $_POST["paytm_environment"]);
-				Configuration::updateValue("Paytm_MERCHANT_INDUSTRY_TYPE", $_POST["industry_type"]);
+				//Configuration::updateValue("Paytm_MERCHANT_INDUSTRY_TYPE", $_POST["industry_type"]);
 				Configuration::updateValue("Paytm_MERCHANT_WEBSITE", $_POST["website"]);
 				Configuration::updateValue("Paytm_EMI_SUBVENTION", $_POST["paytm_emisubvention"]);
 				Configuration::updateValue("Paytm_BANK_OFFER", $_POST["paytm_bankoffer"]);
@@ -212,44 +212,42 @@ class paytm extends PaymentModule
 						<div class="tab-content">
 							<div class="tab-pane active" id="tab-general">
 								<div class="form-wrapper">
+								    <div class="form-group">
+										<label class="control-label col-lg-3 required"> '.$this->l("Environment").'</label>
+										<div class="col-lg-9">
+											<select name="paytm_environment" class="" required="required" >
+											<option '.($field_value['paytm_environment'] != "1"? "selected" : "").' value="0" >Test/Staging</option>
+											<option '.($field_value['paytm_environment'] == "1"? "selected" : "").' value="1">Production</option>
+											</select>
+											<span>Select "Test/Staging" to setup test transactions & "Production" once you are ready to go live.</span>
+										</div>
+									</div>
 									<div class="form-group">
-										<label class="control-label col-lg-3 required"> '.$this->l("Merchant ID").'</label>
+										<label class="control-label col-lg-3 required"> '.$this->l("Test/Production MID").'</label>
 										<div class="col-lg-9">
 											<input type="text" name="merchant_id" value="' . $field_value['merchant_id'] . '"  class="" required="required"/>
 											<span>Based on the selected Environment Mode, copy the relevant Merchant ID for test or production environment available on <a href="https://dashboard.paytm.com/next/apikeys" target="_blank">Paytm dashboard</a>.</span>
 										</div>
 									</div>
 									<div class="form-group">
-										<label class="control-label col-lg-3 required"> '.$this->l("Merchant Key").'</label>
+										<label class="control-label col-lg-3 required"> '.$this->l("Test/Production Secret Key").'</label>
 										<div class="col-lg-9">
 											<input type="text" name="merchant_key" value="' . $field_value['merchant_key'] . '"  class="" required="required"/>
 											<span>Based on the selected Environment Mode, copy the Merchant Key for test or production environment available on <a href="https://dashboard.paytm.com/next/apikeys" target="_blank">Paytm dashboard</a>.</span>
 										</div>
 									</div>
 									<div class="form-group">
-										<label class="control-label col-lg-3 required"> '.$this->l("Website").'</label>
+										<label class="control-label col-lg-3 required"> '.$this->l("Website - Provided by Paytm").'</label> 
 										<div class="col-lg-9">
-											<input type="text" name="website" value="' . $field_value['website'] . '"  class="" required="required"/>
+											<select name="website" class="" required="required" >
+											<option '.($field_value['website'] != "DEFAULT"? "selected" : "").' value="WEBSTAGING" >WEBSTAGING</option>
+											<option '.($field_value['website'] == "DEFAULT"? "selected" : "").' value="DEFAULT">DEFAULT</option>
+											</select>
 											<span>Enter "WEBSTAGING" for test/integration environment & "DEFAULT" for production environment.</span>
 										</div>
 									</div>
-									<div class="form-group">
-										<label class="control-label col-lg-3 required"> '.$this->l("Industry Type").'</label>
-										<div class="col-lg-9">
-											<input type="text" name="industry_type" value="' . $field_value['industry_type'] . '"  class="" required="required"/>
-											<span>Login to <a href="https://dashboard.paytm.com/next/apikeys" target="_blank">Paytm dashboard</a> & copy paste the industry type available there.</span>
-										</div>
-									</div>		
-									<div class="form-group">
-										<label class="control-label col-lg-3 required"> '.$this->l("Environment").'</label>
-										<div class="col-lg-9">
-										<select name="paytm_environment" class="" required="required" >
-										<option '.($field_value['paytm_environment'] != "1"? "selected" : "").' value="0" >Staging</option>
-										<option '.($field_value['paytm_environment'] == "1"? "selected" : "").' value="1">Production</option>
-										</select>
-										<span>Select "Staging" for test/integration environment & "Production" once you move to production environment.</span>
-										</div>
-									</div>
+									
+									
 									<div class="form-group">
 										<label class="control-label col-lg-3"> '.$this->l("Enable EMI Subvention").'</label>
 										<div class="col-lg-9">
@@ -287,7 +285,7 @@ class paytm extends PaymentModule
 										<option '.($field_value['paytm_logo'] != "1"? "selected" : "").' value="0" >Disable</option>
 										<option '.($field_value['paytm_logo'] == "1"? "selected" : "").' value="1">Enable</option>
 										</select>
-										<span>Enable paytm Invert logo for dark theme.</span>
+										<span>Enable Paytm Invert logo for your website dark theme. It is shown on the checkout page.</span>
 										</div>
 									</div>
 									<div class="row-fluid">
@@ -326,7 +324,7 @@ class paytm extends PaymentModule
 
 		$field_data['merchant_id']        = isset($data["merchant_id"])?$data["merchant_id"] : Configuration::get("Paytm_MERCHANT_ID");
 	    $field_data['merchant_key']       = isset($data["merchant_key"])? $data["merchant_key"] : Configuration::get("Paytm_MERCHANT_KEY");
-	    $field_data['industry_type']      = isset($data["industry_type"])?$data["industry_type"] : Configuration::get("Paytm_MERCHANT_INDUSTRY_TYPE");
+	   /* $field_data['industry_type']      = isset($data["industry_type"])?$data["industry_type"] : Configuration::get("Paytm_MERCHANT_INDUSTRY_TYPE");*/
 		$field_data['website']            = isset($data["website"])?$data["website"] : Configuration::get("Paytm_MERCHANT_WEBSITE");
 	    $field_data['paytm_environment']  = isset($data["paytm_environment"])? $data["paytm_environment"] : Configuration::get("Paytm_ENVIRONMENT");
 	    $field_data['paytm_emisubvention']  = isset($data["paytm_emisubvention"])? $data["paytm_emisubvention"] : Configuration::get("Paytm_EMI_SUBVENTION");

@@ -1,2 +1,7 @@
 .paytm_highlight{ font-weight: bold;}
 .redColor{color:#f00;}
+label[for=payment-option-3] img
+{
+    width:280px;
+}
+
