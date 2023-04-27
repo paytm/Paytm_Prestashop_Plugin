@@ -22,8 +22,8 @@ class PaytmConstants{
 	 CONST CONNECT_TIMEOUT						= "10";
 	 CONST TIMEOUT								= "10";
 
-	 CONST LAST_UPDATED							= "20230116";
-	 CONST PLUGIN_VERSION						= "3.5";
+	 CONST LAST_UPDATED							= "20230328";
+	 CONST PLUGIN_VERSION						= "3.6";
 	 CONST PLUGIN_DOC_URL						= "https://developer.paytm.com/docs/eCommerce-plugin/prestashop/#v1-7-x";
 
 	 CONST CUSTOM_CALLBACK_URL					= "";

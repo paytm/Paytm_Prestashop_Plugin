@@ -1,6 +1,15 @@
+
 # Paytm Prestashop plugin
 
 This module offers smooth integration, allowing the customer to pay on your website. It works across all browsers and ensures compatibility with the latest version of PrestaShop.
+
+## Plugin Details
+
+- Compatibility : PrestaShop v1.7 - v8.0.1
+- Requires PHP: v5.6+
+- Tested upto PHP : v8.1
+- Plugin Version: 3.6
+- Last updated: 28/03/2023
 
 ## Authors
 

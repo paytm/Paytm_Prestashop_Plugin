@@ -1,5 +1,6 @@
 <?php 	
 use PrestaShop\PrestaShop\Core\Payment\PaymentOption;
+use PrestaShop\PrestaShop\Adapter\Cart\CartPresenter;
 
 if (!defined('_PS_VERSION_')) {
 	exit;
@@ -98,7 +99,7 @@ class paytm extends PaymentModule
 		return true;
 	}
 	public function getContent() {
-		$this->_html = "<h2>" . $this->displayName . "</h2>";
+		// $this->_html = "<h2>" . $this->displayName . "</h2>";
 		if (isset($_POST["submitPaytm"])) {
 
 			// trim all values
@@ -175,7 +176,7 @@ class paytm extends PaymentModule
 
 	public function _displayPaytm(){
 		$this->_html .= '
-		<img src="https://staticpg.paytm.in/pg_plugins_logo/paytm_logo_paymodes.svg" style="width:380px; float:left; margin:0px;" /><br/><br/><br/>
+		<img src="https://staticpg.paytm.in/pg_plugins_logo/paytm_logo_paymodes.svg" style="width:300px !important; float:left; margin:-3px;"><br/><br />
 		<b>'.$this->l('This module allows you to accept payments by Paytm.').'</b><br />
 		'.$this->l('If the client chooses this payment mode, your Paytm account will be automatically credited.').'<br />
 		'.$this->l('You need to configure your Paytm account first before using this module.').'
@@ -372,25 +373,19 @@ class paytm extends PaymentModule
 		$paytm_invert_logo = PaytmConstants::PAYTM_INVERT_LOGO;	
 			if($field_value['paytm_logo']==1){
 				$newOption->setLogo($paytm_invert_logo);
-			}else {$newOption->setLogo($paytm_colored_logo);} 	
-		//$newOption->setLogo('https://raw.githubusercontent.com/paytm/Paytm_Magento_Plugin/master/paytm_logo_paymodes.svg');
-		//$newOption->setAdditionalInformation('<p>Pay using Credit/Debit Card, NetBanking, Wallet, Postpaid or UPI</p>');
-		echo '<style>
-		label[for=payment-option-3] img{ width:280px;}
-		</style>';
+			}else {$newOption->setLogo($paytm_colored_logo);}  
 		return [$newOption];
 	}
 	// frontend Paytm Form
 	private function generateForm(){
-
 		global $smarty, $cart;
-		$bill_address   = new Address(intval($cart->id_address_invoice));
-		$customer       = new Customer(intval($cart->id_customer));
+		$bill_address   = new Address(intval($this->context->cart->id_address_invoice));
+		$customer       = new Customer(intval($this->context->cart->id_customer));
 		if (!Validate::isLoadedObject($bill_address) OR ! Validate::isLoadedObject($customer))
-			return $this->l("Paytm error: (invalid address or customer)");
-		$amount         = $cart->getOrderTotal(true, Cart::BOTH);
+		 	return $this->l("Paytm error: (invalid address or customer)");
+		//$amount         = $cart->getOrderTotal(true, Cart::BOTH);
+		$amount = $this->context->cart->getOrderTotal(true, Cart::BOTH);
 		$checkout_url          = str_replace('MID',Configuration::get("Paytm_MERCHANT_ID"), PaytmHelper::getPaytmURL(PaytmConstants::CHECKOUT_JS_URL, Configuration::get('Paytm_ENVIRONMENT')));
-		
 		?>
 		<div id="paytm-pg-spinner" class="paytm-pg-loader">
         <div class="bounce1"></div>
@@ -421,7 +416,19 @@ class paytm extends PaymentModule
 </style>
 		<script type="application/javascript" crossorigin="anonymous" src="<?php echo $checkout_url;?>"></script>
 		<script type="text/javascript">
+			const setImage = setTimeout(setLogo, 1000);
 
+			function setLogo(){
+				let paytmDiv = document.querySelector('.binary');
+				if (paytmDiv) {
+					let moduleName = paytmDiv.getAttribute('data-module-name');
+					console.log(moduleName);
+					if(moduleName == "paytm"){
+						let id = paytmDiv.getAttribute('id');
+						document.querySelector("label[for="+id+"] img").style ="width:280px";
+					}
+				}
+			};
 			function initTransaction(){
 				$(".paytm-overlay").css("display","block");
 				$("#paytm-pg-spinner").css("display","block");
