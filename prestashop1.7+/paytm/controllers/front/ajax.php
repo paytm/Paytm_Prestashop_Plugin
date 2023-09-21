@@ -11,6 +11,25 @@ class PaytmAjaxModuleFrontController extends ModuleFrontController
 		echo json_encode($res);
 	}
 
+	public function managePaytmOrderStatus(){
+
+		$success = Configuration::get("Paytm_ID_ORDER_SUCCESS");
+		$failed = Configuration::get("Paytm_ID_ORDER_FAILED");
+		$pending = Configuration::get("Paytm_ID_ORDER_PENDING");
+ 
+		$query = "SELECT id_order_state,deleted FROM " . _DB_PREFIX_ . "order_state WHERE id_order_state IN ('" . $success . "', '" . $failed . "', '" . $pending . "')
+		ORDER BY id_order_state DESC";
+		$getOrderStateData = Db::getInstance()->executeS($query);
+		foreach ($getOrderStateData as $result) {
+			
+			if($result['deleted']==1){ 
+				$updateQuery = "UPDATE " . _DB_PREFIX_ . "order_state
+							SET deleted = 0 WHERE id_order_state = ".$result['id_order_state']."";
+				Db::getInstance()->execute($updateQuery);
+			} 
+		} 
+	}
+
 	public function generate_txn_token(){
 
 		$json = array();
@@ -59,8 +78,9 @@ class PaytmAjaxModuleFrontController extends ModuleFrontController
 			$callbackUrl =  $this->context->link->getModuleLink('paytm', 'validation');
 		}
 
-		//error_reporting(1);
-
+		//function to check Order status
+		$res = $this->managePaytmOrderStatus();
+ 
 		$paytmParams["body"] = array(
 			"requestType"   => "Payment",
 			"mid"           => Configuration::get('Paytm_MERCHANT_ID'),

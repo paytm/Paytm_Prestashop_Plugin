@@ -8,8 +8,8 @@ This module offers smooth integration, allowing the customer to pay on your webs
 - Compatibility : PrestaShop v1.7 - v8.0.1
 - Requires PHP: v5.6+
 - Tested upto PHP : v8.1
-- Plugin Version: 3.6
-- Last updated: 28/03/2023
+- Plugin Version: 3.7
+- Last updated: 21/09/2023
 
 ## Authors
 
