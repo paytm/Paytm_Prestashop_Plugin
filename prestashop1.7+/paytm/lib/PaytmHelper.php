@@ -26,7 +26,16 @@ class PaytmHelper{
 	public static function getPaytmURL($url = false, $isProduction = 0){
 		if(!$url) return false; 
 		if($isProduction == 1){
-			return PaytmConstants::PRODUCTION_HOST . $url;
+            if(PaytmConstants::PPBL==false){
+                return PaytmConstants::PRODUCTION_HOST . $url;
+            }  			
+            $midLength = strlen(preg_replace("/[^A-Za-z]/", "", Configuration::get('Paytm_MERCHANT_ID')));
+	            if($midLength == 6){
+	                return PaytmConstants::PRODUCTION_HOST . $url;
+	            }
+	            if($midLength == 7){
+	                return PaytmConstants::PRODUCTION_PPBL_HOST . $url;
+	            } 
 		}else{
 			return PaytmConstants::STAGING_HOST . $url;			
 		}
