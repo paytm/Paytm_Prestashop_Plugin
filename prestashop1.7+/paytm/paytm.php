@@ -176,7 +176,7 @@ class paytm extends PaymentModule
 
 	public function _displayPaytm(){
 		$this->_html .= '
-		<img src="https://staticpg.paytm.in/pg_plugins_logo/paytm_logo_paymodes.svg" style="width:300px !important; float:left; margin:-3px;"><br/><br />
+		<img src="https://staticpg.paytmpayments.com/pg_plugins_logo/paytm_logo_paymodes.svg" style="width:300px !important; float:left; margin:-3px;"><br/><br />
 		<b>'.$this->l('This module allows you to accept payments by Paytm.').'</b><br />
 		'.$this->l('If the client chooses this payment mode, your Paytm account will be automatically credited.').'<br />
 		'.$this->l('You need to configure your Paytm account first before using this module.').'

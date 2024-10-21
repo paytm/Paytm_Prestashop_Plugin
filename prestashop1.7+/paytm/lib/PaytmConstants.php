@@ -1,11 +1,11 @@
 <?php
 
 class PaytmConstants{
-	CONST TRANSACTION_STATUS_URL_PRODUCTION	    = "https://securegw.paytm.in/order/status";
-	CONST TRANSACTION_STATUS_URL_STAGING		= "https://securegw-stage.paytm.in/order/status";
+	CONST TRANSACTION_STATUS_URL_PRODUCTION	    = "https://secure.paytmpayments.com/order/status";
+	CONST TRANSACTION_STATUS_URL_STAGING		= "https://securestage.paytmpayments.com/order/status";
 
-	CONST PRODUCTION_HOST						= "https://securegw.paytm.in/";
-	CONST STAGING_HOST							= "https://securegw-stage.paytm.in/";
+	CONST PRODUCTION_HOST						= "https://secure.paytmpayments.com/";
+	CONST STAGING_HOST							= "https://securestage.paytmpayments.com/";
 	CONST PRODUCTION_PPBL_HOST						= "https://securepg.paytm.in/";
 
     CONST PPBL = false;		
@@ -25,8 +25,8 @@ class PaytmConstants{
 	 CONST CONNECT_TIMEOUT						= "10";
 	 CONST TIMEOUT								= "10";
 
-	 CONST LAST_UPDATED							= "20231006";
-	 CONST PLUGIN_VERSION						= "3.7.1";
+	 CONST LAST_UPDATED							= "20241021";
+	 CONST PLUGIN_VERSION						= "3.7.2";
 	 CONST PLUGIN_DOC_URL						= "https://developer.paytm.com/docs/eCommerce-plugin/prestashop/#v1-7-x";
 
 	 CONST CUSTOM_CALLBACK_URL					= "";
@@ -57,8 +57,8 @@ class PaytmConstants{
      CONST ERROR_INVALID_ORDER				    = "No order found to process. Kindly contact with us.";
      CONST ERROR_SOMETHING_WENT_WRONG		    = "Oops! Trouble in initiating transaction. Please try again.";
      CONST TOKEN_GENERATED_SUCCESSFULLY			= "Token generated successfully!";
-     CONST PAYTM_COLORED_LOGO					= "https://staticpg.paytm.in/pg_plugins_logo/paytm_logo_paymodes.svg";
-     CONST PAYTM_INVERT_LOGO					= "https://staticpg.paytm.in/pg_plugins_logo/paytm_logo_invert.svg";
+     CONST PAYTM_COLORED_LOGO					= "https://staticpg.paytmpayments.com/pg_plugins_logo/paytm_logo_paymodes.svg";
+     CONST PAYTM_INVERT_LOGO					= "https://staticpg.paytmpayments.com/pg_plugins_logo/paytm_logo_invert.svg";
 
 }
 

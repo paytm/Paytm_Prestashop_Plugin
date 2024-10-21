@@ -5,11 +5,11 @@ This module offers smooth integration, allowing the customer to pay on your webs
 
 ## Plugin Details
 
-- Compatibility : PrestaShop v1.7 - v8.0.1
+- Compatibility : PrestaShop v1.7 - v8.X
 - Requires PHP: v5.6+
 - Tested upto PHP : v8.1
 - Plugin Version: 3.7
-- Last updated: 21/09/2023
+- Last updated: 21/10/2024
 
 ## Authors
 
@@ -34,4 +34,4 @@ Here are some related projects
 
 
 
-![Logo](https://staticpg.paytm.in/pg_plugins_logo/paytm_logo_paymodes.svg)
+![Logo](https://staticpg.paytmpayments.com/pg_plugins_logo/paytm_logo_paymodes.svg)
