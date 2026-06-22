@@ -453,30 +453,37 @@ class Paytm extends PaymentModule {
 				
 		return json_encode($json);
 	}
-	public function saveTxnResponse($data  = array(), $id = false){
+	public function saveTxnResponse($data = array(), $id = false)
+	{
+		if (empty($data['STATUS'])) {
+			return false;
+		}
 
-		if(empty($data['STATUS'])) return false;
+		$status = (!empty($data['STATUS']) && $data['STATUS'] == 'TXN_SUCCESS') ? 1 : 0;
+		$paytm_order_id = !empty($data['ORDERID']) ? $data['ORDERID'] : '';
+		$transaction_id = !empty($data['TXNID']) ? $data['TXNID'] : '';
 
-		$status 			= (!empty($data['STATUS']) && $data['STATUS'] =='TXN_SUCCESS') ? 1 : 0;
-		$paytm_order_id 	= (!empty($data['ORDERID'])? $data['ORDERID']:'');
-		$transaction_id 	= (!empty($data['TXNID'])? $data['TXNID']:'');
+		if ($paytm_order_id && $id) {
+			$query = Db::getInstance()->getRow(
+				'SELECT * FROM `' . _DB_PREFIX_ . 'paytm_order_data` WHERE paytm_order_id = \'' . pSQL($paytm_order_id) . '\''
+			);
+			if ($query) {
+				$update_response = (array) json_decode($query['paytm_response'], true);
+				$update_response['STATUS'] = $data['STATUS'];
+				$update_response['RESPCODE'] = $data['RESPCODE'];
+				$update_response['RESPMSG'] = $data['RESPMSG'];
 
-		if($paytm_order_id && $id){
+				Db::getInstance()->update('paytm_order_data', array(
+					'transaction_id' => $transaction_id,
+					'status' => (int) $status,
+					'paytm_response' => json_encode($update_response),
+					'date_modified' => date('Y-m-d H:i:s'),
+				), 'paytm_order_id = \'' . pSQL($paytm_order_id) . '\' AND id = ' . (int) $id);
 
-			$sql = "SELECT * from " . _DB_PREFIX_ . "paytm_order_data WHERE paytm_order_id = '" . $paytm_order_id . "'";
-			$query =  Db::getInstance()->getRow($sql);
-			if($query){
-
-				$update_response = (array)json_decode($query['paytm_response']);
-				$update_response['STATUS'] 		= $data['STATUS'];
-				$update_response['RESPCODE'] 	= $data['RESPCODE'];
-				$update_response['RESPMSG'] 	= $data['RESPMSG'];
-
-				$sql =  "UPDATE " . _DB_PREFIX_ . "paytm_order_data SET transaction_id = '" . $transaction_id . "', status = '" . (int)$status . "', paytm_response = '" . json_encode($update_response) . "', date_modified = NOW() WHERE paytm_order_id = '" . $paytm_order_id . "' AND id = '" . (int)$id . "'";
-				Db::getInstance()->execute($sql);
 				return $update_response;
-			}			
-		}		
+			}
+		}
+
 		return false;
 	}
 	private function blinkCheckoutSend($paramData = array()){

@@ -9,7 +9,7 @@ This module offers smooth integration, allowing the customer to pay on your webs
 - Requires PHP: v5.6+
 - Tested upto PHP : v8.1
 - Plugin Version: 3.7
-- Last updated: 21/10/2024
+- Last updated: 22/06/2026
 
 ## Authors
 
@@ -18,7 +18,7 @@ This module offers smooth integration, allowing the customer to pay on your webs
 
 ## Documentation
 
-[Developer Documentation](https://business.paytm.com/docs/prestashop/
+[Developer Documentation](https://www.paytmpayments.com/docs/prestashop/
 )
  
 ## Related

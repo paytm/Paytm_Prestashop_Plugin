@@ -29,35 +29,36 @@ class PaytmValidationModuleFrontController extends ModuleFrontController
 		$merchant_id     = Configuration::get('Paytm_MERCHANT_ID');
 		$secret_key      = Configuration::get('Paytm_MERCHANT_KEY');
 
-		$paramList       = $_POST;
-		$order_id        = $_POST['ORDERID'];
-		$res_code        = $_POST['RESPCODE'];
-		$res_desc        = $_POST['RESPMSG'];
-		$checksum_recv   = $_POST['CHECKSUMHASH'];
-		$order_amount    = $_POST['TXNAMOUNT'];
+		if (empty($_POST['ORDERID']) || empty($_POST['CHECKSUMHASH'])) {
+			Tools::redirect('index.php?controller=order&step=1');
+		}
 
-		$extra_params = array(); // extra order params to attach with order
-		if(isset($_POST['TXNID'])) {
+		$order_id      = $_POST['ORDERID'];
+		$checksum_recv = $_POST['CHECKSUMHASH'];
+		$responseMsg1  = isset($_POST['RESPMSG']) ? $_POST['RESPMSG'] : '';
+
+		$extra_params = array();
+		if (isset($_POST['TXNID'])) {
 			$extra_params['transaction_id'] = $_POST['TXNID'];
 		}
-		
-			/* save paytm response in db */
-			if(PaytmConstants::SAVE_PAYTM_RESPONSE && !empty($_POST['STATUS'])){
-				$order_data_id   = $this->saveTxnResponse($_POST, PaytmHelper::getOrderId($order_id));
+
+		$paramList = $_POST;
+		unset($paramList['CHECKSUMHASH']);
+		$bool = PaytmChecksum::verifySignature($paramList, $secret_key, $checksum_recv);
+
+		$order_data_id   = false;
+		$update_response = array();
+		$status_code     = "";
+
+		$cart    = $this->context->cart;
+		$cart_id = $cart->id;
+		$amount  = $cart->getOrderTotal(true, Cart::BOTH);
+
+		if ($bool == true) {
+			if (PaytmConstants::SAVE_PAYTM_RESPONSE && !empty($_POST['STATUS'])) {
+				$order_data_id   = $this->saveTxnResponse($_POST, (int) PaytmHelper::getOrderId($order_id));
 				$update_response = $_POST;
 			}
-			/* save paytm response in db */
-		$status_code  = "";
-		$bool         = false;
-
-		unset($_POST['CHECKSUMHASH']);
-		$bool         = PaytmChecksum::verifySignature($_POST, $secret_key, $checksum_recv);
-
-		$cart         = $this->context->cart;
-		$cart_id      = $cart->id;
-		$amount       = $cart->getOrderTotal(true,Cart::BOTH);
-		$responseMsg1 = $_POST['RESPMSG'];
-		if ($bool == true) {
 			// Create an array having all required parameters for status query.
 			$reqParams                 = array("MID" => $merchant_id , "ORDERID" => $order_id);	
 			$reqParams['CHECKSUMHASH'] = PaytmChecksum::generateSignature($reqParams,$secret_key);
@@ -78,7 +79,7 @@ class PaytmValidationModuleFrontController extends ModuleFrontController
 						$update_response['RESPCODE'] 	= $resParams['RESPCODE'];
 						$update_response['RESPMSG'] 	= $resParams['RESPMSG'];
 
-						$this->saveTxnResponse($update_response,PaytmHelper::getOrderId($resParams['ORDERID']), $order_data_id);
+						$this->saveTxnResponse($update_response, (int) PaytmHelper::getOrderId($resParams['ORDERID']), $order_data_id);
 					}
 					/* save paytm response in db */
 			    //retry 3 times for transaction status if we dont get reponse	
@@ -144,7 +145,6 @@ class PaytmValidationModuleFrontController extends ModuleFrontController
 			$message     = "Security Error !!";
 			$responseMsg = PaytmConstants::ERROR_CHECKSUM_MISMATCH;
 			$status      = Configuration::get('Paytm_ID_ORDER_FAILED');
-			
 		}
 		$customer        = new Customer($cart->id_customer);
 		$this->module->validateOrder((int)$cart_id,  $status, (float)$amount, "Paytm", null, $extra_params, null, false, $customer->secure_key);
@@ -158,21 +158,39 @@ class PaytmValidationModuleFrontController extends ModuleFrontController
 		}
 	}
 
-	private function saveTxnResponse($data  = array(),$order_id, $id = false){
-		
-		if(empty($data['STATUS']))return false;
-		 
-		$status 		    = (!empty($data['STATUS']) && $data['STATUS'] =='TXN_SUCCESS') ? 1 : 0;
-		$paytm_order_id 	= (!empty($data['ORDERID'])? $data['ORDERID']:'');
-		$transaction_id 	= (!empty($data['TXNID'])? $data['TXNID']:'');
-		
-		if($id !== false){
-		$sql =  "UPDATE " . _DB_PREFIX_ . "paytm_order_data SET order_id = '" . $order_id . "', paytm_order_id = '" . $paytm_order_id . "', transaction_id = '" . $transaction_id . "', status = '" . (int)$status . "', paytm_response = '" . json_encode($data) . "', date_modified = NOW() WHERE id = '" . (int)$id . "'";
-			 Db::getInstance()->execute($sql);
-			return $id;
-		}else{
-			 $sql =  "INSERT INTO " . _DB_PREFIX_ . "paytm_order_data SET order_id = '" . $order_id . "', paytm_order_id = '" . $paytm_order_id . "', transaction_id = '" . $transaction_id . "', status = '" . (int)$status . "', paytm_response = '" . json_encode($data) . "', date_added = NOW(), date_modified = NOW()";
-			return Db::getInstance()->execute($sql);
-		}	
+	private function saveTxnResponse($data, $order_id, $id = false)
+	{
+		if (empty($data['STATUS'])) {
+			return false;
+		}
+
+		$status         = (!empty($data['STATUS']) && $data['STATUS'] == 'TXN_SUCCESS') ? 1 : 0;
+		$paytm_order_id = !empty($data['ORDERID']) ? (string) $data['ORDERID'] : '';
+		$transaction_id = !empty($data['TXNID']) ? (string) $data['TXNID'] : '';
+		$order_id       = (int) $order_id;
+
+		$row = array(
+			'order_id'       => $order_id,
+			'paytm_order_id' => $paytm_order_id,
+			'transaction_id' => $transaction_id,
+			'status'         => (int) $status,
+			'paytm_response' => json_encode($data),
+			'date_modified'  => date('Y-m-d H:i:s'),
+		);
+
+		if ($id !== false) {
+			return Db::getInstance()->update(
+				'paytm_order_data',
+				$row,
+				'id = ' . (int) $id
+			) ? (int) $id : false;
+		}
+
+		$row['date_added'] = date('Y-m-d H:i:s');
+		if (Db::getInstance()->insert('paytm_order_data', $row)) {
+			return (int) Db::getInstance()->Insert_ID();
+		}
+
+		return false;
 	}
 }

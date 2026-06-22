@@ -9,7 +9,7 @@ This module offers smooth integration, allowing the customer to pay on your webs
 
 ## Documentation
 
-[Developer Documentation](https://business.paytm.com/docs/prestashop/
+[Developer Documentation](https://www.paytmpayments.com/docs/prestashop/
 )
  
 ## Related
