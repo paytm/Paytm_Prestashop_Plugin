@@ -52,9 +52,13 @@ class PaytmValidationModuleFrontController extends ModuleFrontController
 
 		$cart    = $this->context->cart;
 		$cart_id = $cart->id;
-		$amount  = $cart->getOrderTotal(true, Cart::BOTH);
+		$amount         = $cart->getOrderTotal(true, Cart::BOTH);
+		$posted_amount  = isset($_POST['TXNAMOUNT']) ? $_POST['TXNAMOUNT'] : '';
 
-		if ($bool == true) {
+		if ($bool == true
+			&& isset($_POST['MERC_UNQ_REF'])
+			&& (int) $_POST['MERC_UNQ_REF'] === (int) $cart_id
+			&& $this->amountsMatch($posted_amount, $amount)) {
 			if (PaytmConstants::SAVE_PAYTM_RESPONSE && !empty($_POST['STATUS'])) {
 				$order_data_id   = $this->saveTxnResponse($_POST, (int) PaytmHelper::getOrderId($order_id));
 				$update_response = $_POST;
@@ -192,5 +196,18 @@ class PaytmValidationModuleFrontController extends ModuleFrontController
 		}
 
 		return false;
+	}
+
+	private function amountsMatch($paid, $expected)
+	{
+		if (!is_numeric($paid) || !is_numeric($expected)) {
+			return false;
+		}
+		$paid_value     = number_format(round((float) $paid, 2), 2, '.', '');
+		$expected_value = number_format(round((float) $expected, 2), 2, '.', '');
+		if ((float) $paid_value <= 0 || (float) $expected_value <= 0) {
+			return false;
+		}
+		return $paid_value === $expected_value;
 	}
 }

@@ -25,8 +25,8 @@ class PaytmConstants{
 	 CONST CONNECT_TIMEOUT						= "10";
 	 CONST TIMEOUT								= "10";
 
-	 CONST LAST_UPDATED							= "20241021";
-	 CONST PLUGIN_VERSION						= "3.7.2";
+	 CONST LAST_UPDATED							= "20261116";
+	 CONST PLUGIN_VERSION						= "3.7.3";
 	 CONST PLUGIN_DOC_URL						= "https://developer.paytm.com/docs/eCommerce-plugin/prestashop/#v1-7-x";
 
 	 CONST CUSTOM_CALLBACK_URL					= "";
@@ -54,6 +54,9 @@ class PaytmConstants{
 	 CONST ERROR_SERVER_COMMUNICATION		    = "It seems some issue in server to server communication. Kindly connect with us.";
      CONST ERROR_CHECKSUM_MISMATCH				= "Security Error. Checksum Mismatched!";
      CONST ERROR_AMOUNT_MISMATCH				= "Security Error. Amount Mismatched!";
+     CONST ERROR_CART_MISMATCH					= "Security Error. Payment does not belong to this cart.";
+     CONST ERROR_TXN_ALREADY_USED				= "Security Error. This payment has already been used.";
+     CONST ERROR_PAYMENT_NOT_VERIFIED			= "Security Error. Payment could not be verified.";
      CONST ERROR_INVALID_ORDER				    = "No order found to process. Kindly contact with us.";
      CONST ERROR_SOMETHING_WENT_WRONG		    = "Oops! Trouble in initiating transaction. Please try again.";
      CONST TOKEN_GENERATED_SUCCESSFULLY			= "Token generated successfully!";

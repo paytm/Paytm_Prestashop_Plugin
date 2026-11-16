@@ -94,6 +94,9 @@ class PaytmAjaxModuleFrontController extends ModuleFrontController
 			"userInfo"      => array(
 				"custId"    => $paramData['cust_id'],
 			),
+			"extendInfo" => array(
+				"mercUnqRef" => intval($cart->id),
+			),
 		);
 		// for bank offers
         if(Configuration::get('Paytm_BANK_OFFER') ==1){
